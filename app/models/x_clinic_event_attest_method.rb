@@ -1,0 +1,2 @@
+class XClinicEventAttestMethod < ApplicationRecord
+end

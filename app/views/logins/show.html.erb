@@ -1,0 +1,9 @@
+<%= form_for @user, url: login_path do |f| %>
+	<% if flash[:notice] -%>
+    	<%= flash[:notice] %>
+    <% end -%>
+	<label>E-mail Address</label><%= f.text_field :email_address, :size => "30", :maxlength => "50", :tabindex => "1" %>
+    <label>Password <%#= link_to "( I forgot my password! )", {:action => 'reset_password'}, {:class => "forgot", :tabindex => "4"} %></label><%= f.password_field :password, :size => "30", :maxlength => "50", :tabindex => "2" %>
+    <%= f.submit 'Log In', :class => 'login button', :tabindex => "3" %>
+	<p><small>This system and its contents are for authorized users ONLY. <br />If you require assistance, please e-mail the <%= mail_to "mumsupport@ancillapartners.com", "System Administrator", :subject => "MUM Inquiry from Login Page", :encode => "hex" %></small></p>
+<% end -%>

@@ -1,0 +1,54 @@
+<div id="updating_modal">
+  <div style="display: table-cell; vertical-align: middle;">
+    <div id="spinner"></div>
+  </div>
+</div>
+<% form_tag :action => 'index' do %>
+    <div class="mips_home_tab">
+      <h3 class="section_header">EC Financial % Submissions</h3>
+      <div class="mips_table_div scrolling_div">
+        <table id="mips_quality_table">
+          <% @x_year_attestation_methods.each do |method| %>
+              <% department_mips_scores = Department.Group_Departments_By_GroupID_ClinicID_EventID_XYearAttestationMethodID_UserDefinedFields_DepartmentOwnerID(@selected_group.id, @selected_attestation_clinic_id_portal, @selected_event_id, method.id, ['-1'], @billing_info_fiscal_year.id, @selected_department_owner_id, @selected_low_volume, method.attestation_method.has_clinic_rollup?) %>
+
+              <thead>
+              <tr>
+                <td>Provider Name</td>
+                <td>NPI</td>
+                <td>TIN</td>
+                <td>Clinic Name</td>
+                <td>Financial %<br/>Expected</td>
+                <td>Financial %<br/>CMS</td>
+                <td>Submission<br /> Confirmation #</td>
+              </tr>
+              </thead>
+              <tbody>
+              <% department_mips_scores.each do |department| %>
+                  <% calc_score = calculate_composite_score(department, method) %>
+                  <% mips_composite_score = calc_score.to_f/100.0 %>
+                  <% x_fiscal_year_financial_method = XAttestationRequirementFiscalYearFinancialMethodType.find_by_attestation_requirement_fiscal_year_id_and_financial_method_type_id(@selected_attestation_requirement_fiscal_year_id, method.attestation_method.financial_method_type_id) %>
+                  <% base_adjust_perc = calculate_base_adjustment_percent(mips_composite_score, x_fiscal_year_financial_method) %>
+                  <% bonus_adjust_perc = calculate_bonus_adjustment_percent(mips_composite_score, x_fiscal_year_financial_method) %>
+                  <tr>
+                    <td title="EC Name"><%= display_department_name1(department) %> </td>
+                    <td title="NPI"><%= display_NPI(department) %></td>
+                    <td title="TIN"><%= display_clinic_TIN(department) %></td>
+                    <td title="Clinic Name"><%= display_clinic_name(department) %></td>
+                    <td title="Financial % Expected">
+
+                      <% base_net_fee = base_adjust_perc %>
+                      <% base_net_fee *= @scaling_factor_base_selected.to_f if base_adjust_perc > 0 and !x_fiscal_year_financial_method.is_apm_flat_method? %>
+                      <% bonus_net_fee = bonus_adjust_perc*@scaling_factor_bonus_selected.to_f %>
+                      <%= calc_score.nil? ? '' : number_to_percentage((base_net_fee + bonus_net_fee)*100, :precision => 2) %>
+                    </td>
+                    <td title="Financial % CMS"></td>
+                    <td title="Submission Confirmation"></td>
+                  </tr>
+              <% end %>
+              </tbody>
+          <% end %>
+
+        </table>
+      </div>
+    </div>
+<% end %>

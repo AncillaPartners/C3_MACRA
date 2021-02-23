@@ -1,0 +1,2 @@
+class AttestationClinicSubmitPermissionFile < ApplicationRecord
+end

@@ -1,0 +1,724 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+        "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<title>MUM: Health IT Meaningful Use Monitor</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta http-equiv="Content-Language" content="en-us" />
+	<link rel="Shortcut Icon" href="/images/favicon.ico" type="image/x-icon" />
+  	<%= stylesheet_link_tag 'print', :media => "print"%>
+  	<%= stylesheet_link_tag 'screen', :media => "screen"%>
+
+    <%= javascript_pack_tag 'application' %>
+	<%= javascript_pack_tag "jquery.js" %>
+	<%= javascript_pack_tag "rails.js" %>
+	<%= javascript_pack_tag "realtime.js" %>
+	<%= javascript_pack_tag "count_down_timer.js" %>
+
+<script language="javascript" type="text/javascript">
+	function load() {
+    //countdown('1', '<%# session[:expiry_time_server].strftime("%B %d, %Y %H:%M:%S") %>', 2, 'Session Expire');
+    CreateTimer("1", <%= @max_session_time %>);
+}
+</script>
+
+	<%#= calendar_date_select_includes "default" %> <!-- # or "blue", or "silver", or nil for the default! -->
+	<%# CalendarDateSelect.format=(:american )%>
+
+    <script language="javascript" type="text/javascript">
+        function display_lost_payments_popup()
+        {
+            var response = false;
+            response = window.open('/financial_management/popup', 'PopupPage', 'height=500,width=950,scrollbars=yes,resizable=yes');
+        }
+
+        function display_meaningful_use_penalties_popup()
+        {
+            var response = false;
+            response = window.open('/financial_management/mu_penalty_popup', 'PopupPage', 'height=500,width=950,scrollbars=yes,resizable=yes');
+        }
+
+        function display_meaningful_use_opportunity_cost_popup()
+        {
+            var response = false;
+            response = window.open('/financial_management/mu_opportunity_cost_popup', 'PopupPage', 'height=500,width=950,scrollbars=yes,resizable=yes');
+        }
+
+        function display_entity_type_what_if_popup(attestation_method_id)
+        {
+            var response = false;
+            response = window.open('/home/what_if_popup/?selected_attestation_method_id='+attestation_method_id, 'PopupPage', 'height=525,width=950,scrollbars=yes,resizable=yes');
+        }
+
+        function display_submission_method_what_if_popup(attestation_method_id)
+        {
+            var response = false;
+            response = window.open('/home/what_if_submission_popup/?selected_attestation_method_id='+attestation_method_id, 'PopupPage', 'height=550,width=1100,scrollbars=yes,resizable=yes');
+        }
+
+        function display_batch_history_popup()
+        {
+            var response = false;
+            response = window.open('/batch_history/batch_history_popup', 'PopupPage', 'height=550,width=1100,scrollbars=yes,resizable=yes');
+        }
+
+        function display_import_qrda_3_exceptions_popup(job_history_id)
+        {
+            var response = false;
+            response = window.open('/batch_history/import_qrda_3_exceptions_popup?job_history_id=' + job_history_id, 'PopupPage', 'height=550,width=1100,scrollbars=yes,resizable=yes');
+        }
+
+        function display_group_score_upload_errors_popup(job_history_id)
+        {
+            var response = false;
+            response = window.open('/batch_history/group_score_upload_errors_popup?job_history_id=' + job_history_id, 'PopupPage', 'height=550,width=1100,scrollbars=yes,resizable=yes');
+        }
+
+        function display_qpp_cms_popup(npi)
+        {
+            var response = false;
+            response = window.open('https://qpp.cms.gov/participation-lookup?npi=' + npi + '#summary', 'PopupPage', 'height=550,width=1100,scrollbars=yes,resizable=yes');
+        }
+
+    function display_cms_update_popup()
+    {
+        var response = false;
+        response = window.open('/cms_update/popup', 'PopupPage', 'height=400,width=850,scrollbars=yes,resizable=yes');
+    }
+
+    function display_message_popup(message_id)
+    {
+        var response = false;
+        response = window.open('/messaging/popup?id='+message_id, 'PopupPage', 'height=400,width=850,scrollbars=yes,resizable=yes');
+    }
+
+    function display_home_message_popup()
+    {
+        var response = false;
+        response = window.open('/messaging/home_display_popup', 'PopupPage', 'height=400,width=850,scrollbars=yes,resizable=yes');
+    }
+
+	function Show_Advance_Section(id) {
+	 var show_row = document.getElementById(id);
+	 var display_link = document.getElementById('display');
+	 var hide_link = document.getElementById('hide');
+     if(show_row){
+        show_row.style.display = '';
+        display_link.style.display = 'none';
+        hide_link.style.display = '';
+     }
+	}
+
+    function Hide_Advance_Section(id)
+    {
+        var hide_row = document.getElementById(id);
+        var display_link = document.getElementById('display');
+        var hide_link = document.getElementById('hide');
+        hide_row.style.display = 'none';
+        display_link.style.display = '';
+        hide_link.style.display = 'none';
+    }
+
+	function check_advance_search(display_advance_search_section)
+	{
+		if(display_advance_search_section == '1'){
+			Show_Advance_Section('advance_filters');
+		}
+	}
+
+	function Hide_Section(id) {
+	 var hide_row = document.getElementById(id);
+	 //var dept_req_reg_lan = document.getElementById("dept_req_reg_lan_"+id);
+	 //var dept_req_tech_int = document.getElementById("dept_req_tech_intrp_"+id);
+	 var dept_req_notes_audit = document.getElementById("dept_req_notes_audit_"+id);
+ 	 //dept_req_reg_lan.style.display = 'none';
+ 	 //dept_req_tech_int.style.display = 'none';
+ 	 dept_req_notes_audit.style.display = 'none';
+	}
+
+	function Show_Section(id) {
+	 var show_row = document.getElementById(id);
+	 //var dept_req_reg_lan = document.getElementById("dept_req_reg_lan_"+id);
+	 //var dept_req_tech_int = document.getElementById("dept_req_tech_intrp_"+id);
+	 var dept_req_notes_audit = document.getElementById("dept_req_notes_audit_"+id);
+ 	 //dept_req_reg_lan.style.display = 'block';
+ 	 //dept_req_tech_int.style.display = 'block';
+ 	 dept_req_notes_audit.style.display = 'block';
+	}
+
+	function Expand_Section(id) {
+	 var expand_row = document.getElementById(id);
+	 var expand_row_link = document.getElementById(id+"_expand");
+	 var shrink_row_link = document.getElementById(id+"_shrink");
+	 expand_row.style.overflow = 'visible';
+	 expand_row.style.height = 'auto';
+	 expand_row_link.style.display = 'none';
+	 shrink_row_link.style.display = '';
+	}
+
+	function Shrink_Section(id, size) {
+	 var shrink_row = document.getElementById(id);
+	 var shrink_row_link = document.getElementById(id+"_shrink");
+	 var expand_row_link = document.getElementById(id+"_expand");
+	 shrink_row.style.overflow = 'auto';
+	 shrink_row.style.height = size;
+	 shrink_row_link.style.display = 'none';
+	 expand_row_link.style.display = '';
+	}
+
+	function enable_field(trigger_object, target_object){
+	 var trigger_object_id = document.getElementById(trigger_object);
+	 var target_object_id = document.getElementById(target_object);
+	 target_object_id.disabled = true;
+
+	 if(trigger_object_id.checked == true) {
+		target_object_id.disabled = false;
+	 }
+
+	}
+
+	function enable_field_and_switch_number(trigger_object, target_object, temp_manual_value_object, auto_value_object){
+	 var trigger_object_id = document.getElementById(trigger_object);
+	 var target_object_id = document.getElementById(target_object);
+	 var temp_manual_value_object_id = document.getElementById(temp_manual_value_object);
+	 var auto_value_object_id = document.getElementById(auto_value_object);
+
+	 if(trigger_object_id.checked == true) {
+		target_object_id.disabled = false;
+		target_object_id.value = parseInt(temp_manual_value_object_id.value);
+	 }else{
+		target_object_id.disabled = true;
+		temp_manual_value_object_id.value = parseInt(target_object_id.value);
+		target_object_id.value = parseInt(auto_value_object_id.value);
+	 }
+
+	}
+
+	function hide_field(trigger_object, target_object){
+	 var trigger_object_id = document.getElementById(trigger_object);
+	 var target_object_id = document.getElementById(target_object);
+	 target_object_id.style.display = 'none';
+
+	 if(trigger_object_id.checked == true) {
+		target_object_id.style.display = 'block';
+	 }
+
+	}
+
+	function hide_field_by_select(trigger_object, target_object, hide_value){
+	 var trigger_object_id = document.getElementById(trigger_object);
+	 var target_object_id = document.getElementById(target_object);
+	 target_object_id.style.display = 'block';
+
+	 temp_trigger_object_value = parseInt(trigger_object_id.value);
+
+	 if(temp_trigger_object_value == hide_value) {
+		target_object_id.style.display = 'none';
+	 }
+
+	}
+
+    function show_fields_by_select(trigger_object, target_objects, show_value){
+     var trigger_object_id = document.getElementById(trigger_object);
+     var display_value = 'none';
+
+     var temp_trigger_object_value = parseInt(trigger_object_id.value);
+
+     if(temp_trigger_object_value == show_value) {
+        display_value = 'block';
+     }
+
+     for (i = 0; i < target_objects.length; i++)
+     {
+        target_objects[i].style.display = display_value;
+     }
+
+    }
+
+	function hide_field_by_check(trigger_object, target_object){
+	 var trigger_object_id = document.getElementById(trigger_object);
+	 var target_object_id = document.getElementById(target_object);
+	 target_object_id.style.display = 'none';
+
+	 if(trigger_object_id.checked) {
+		target_object_id.style.display = 'block';
+	 }
+
+	}
+
+	function disable_field_by_check(trigger_object, target_object){
+	 var trigger_object_id = document.getElementById(trigger_object);
+	 var target_object_id = document.getElementById(target_object);
+	 target_object_id.disabled = true;
+
+	 if(trigger_object_id.checked) {
+		target_object_id.disabled = false;
+	 }
+
+	}
+
+	function calculate_current_measure_field(current_measure, numerator, denominator){
+	 var current_measure_id = document.getElementById(current_measure);
+	 var numerator_id = document.getElementById(numerator);
+	 var denominator_id = document.getElementById(denominator);
+	 var temp_current_measure_value = 0;
+	 var temp_numerator = 0;
+	 var temp_denominator = 0;
+
+     if(IsNumeric(denominator_id.value) == false){
+	    denominator_id.value = stripAlphaChars(denominator_id.value);
+	    denominator_id.value = denominator_id.value.replace(/^\s+|\s+$/g, '');
+     	if(denominator_id.value == ""){
+     		denominator_id.value = 0;
+     	}
+     }
+
+     if(IsNumeric(numerator_id.value) == false){
+	    numerator_id.value = stripAlphaChars(numerator_id.value);
+	    numerator_id.value = numerator_id.value.replace(/^\s+|\s+$/g, '');
+     	if(numerator_id.value == ""){
+     		numerator_id.value = 0;
+     	}
+     }
+
+	 temp_numerator = parseInt(numerator_id.value);
+	 temp_denominator = parseInt(denominator_id.value);
+ 	 numerator_id.style.background = 'white';
+	 if(temp_denominator > 0 && temp_numerator <= temp_denominator){
+	 	temp_current_measure_value = ((temp_numerator/temp_denominator)*100);
+	 	temp_current_measure_value = temp_current_measure_value.toFixed(1);
+	 	current_measure_id.value = temp_current_measure_value+"%";
+	 }else{
+	 	if(temp_numerator > temp_denominator){
+			numerator_id.style.background = 'red';
+			alert("Your Denominator must be larger or equal to the numerator!");
+			numerator_id.focus();
+			numerator_id.select();
+		}else{
+			if(temp_denominator == 0 && temp_numerator == temp_denominator){
+				current_measure_id.value = '0%';
+			}
+		}
+	 }
+
+	}
+
+	function calculate_group_requirement_current_measure_field(current_measure, numerator, denominator, nonehr_denominator){
+	 var current_measure_id = document.getElementById(current_measure);
+	 var numerator_id = document.getElementById(numerator);
+	 var denominator_id = document.getElementById(denominator);
+	 var nonehr_denominator_id = document.getElementById(nonehr_denominator);
+	 var temp_current_measure_value = 0;
+	 var temp_numerator = 0;
+
+     if(IsNumeric(denominator_id.value) == false){
+	    denominator_id.value = stripAlphaChars(denominator_id.value);
+	    denominator_id.value = denominator_id.value.replace(/^\s+|\s+$/g, '');
+     	if(denominator_id.value == ""){
+     		denominator_id.value = 0;
+     	}
+     }
+
+     if(IsNumeric(numerator_id.value) == false){
+	    numerator_id.value = stripAlphaChars(numerator_id.value);
+	    numerator_id.value = numerator_id.value.replace(/^\s+|\s+$/g, '');
+     	if(numerator_id.value == ""){
+     		numerator_id.value = 0;
+     	}
+     }
+
+     if(IsNumeric(nonehr_denominator_id.value) == false){
+	    nonehr_denominator_id.value = stripAlphaChars(nonehr_denominator_id.value);
+	    nonehr_denominator_id.value = nonehr_denominator_id.value.replace(/^\s+|\s+$/g, '');
+     	if(nonehr_denominator_id.value == ""){
+     		nonehr_denominator_id.value = 0;
+     	}
+     }
+
+	 var total_denominator = parseInt(denominator_id.value) + parseInt(nonehr_denominator_id.value);
+	 var temp_numerator = parseInt(numerator_id.value);
+
+ 	 numerator_id.style.background = '';
+	 if(total_denominator > 0 && temp_numerator <= total_denominator){
+	 	temp_current_measure_value = ((temp_numerator/total_denominator)*100);
+	 	temp_current_measure_value = temp_current_measure_value.toFixed(1);
+	 	current_measure_id.value = temp_current_measure_value+"%";
+	 }else{
+	 	if(temp_numerator > total_denominator){
+			numerator_id.style.background = 'red';
+			alert("Your Denominator must be larger or equal to the numerator!");
+			numerator_id.focus();
+			numerator_id.select();
+		}else{
+			if(total_denominator == 0 && temp_numerator == total_denominator){
+				current_measure_id.value = '0%';
+			}
+		}
+	 }
+
+	}
+
+	function IsNumeric(strString)
+   	//  check for valid numeric strings
+   	{
+   		// if want negative number or decimal
+   		// var strValidChars = "0123456789.-";
+   		var strValidChars = "0123456789";
+   		var strChar;
+   		var blnResult = true;
+
+   		if (strString.length == 0) return false;
+
+   		//  test strString consists of valid characters listed above
+   		for (i = 0; i < strString.length && blnResult == true; i++)
+    	{
+      		strChar = strString.charAt(i);
+      		if (strValidChars.indexOf(strChar) == -1)
+         	{
+         		blnResult = false;
+         	}
+      	}
+   		return blnResult;
+   	}
+
+	function stripAlphaChars(pstrSource)
+	{
+		var m_strOut = new String(pstrSource);
+	    m_strOut = m_strOut.replace(/[^0-9]/g, '');
+
+	    return m_strOut;
+	}
+
+    function checkUncheckAll(checkAllState, cbGroup)
+    {
+        cbGroup.checked = checkAllState.checked;
+
+        for (i = 0; i < cbGroup.length; i++)
+        {
+            cbGroup[i].checked = checkAllState.checked;
+        }
+    }
+
+    function checkUncheckAllByClass(source_event, class_name)
+    {
+        source = document.getElementById(source_event);
+        cbGroup = document.getElementsByClassName(class_name);
+        for (var i = 0; i < cbGroup.length; ++i) {
+            var item = cbGroup[i];
+            item.checked = source.checked;
+        }
+    }
+
+	function imposeMaxLength(Object, MaxLen)
+    {
+        return(Object.value.length <= MaxLen);
+    }
+
+	function textCounter(field, countfield, maxlimit) {
+		if (field.value.length > maxlimit){ // if too long...trim it!
+			field.value = field.value.substring(0, maxlimit);
+		// otherwise, update 'characters left' counter
+        }else{
+			countfield.value = addCommas(maxlimit - field.value.length)+" characters left";
+        }
+    }
+
+		function addCommas(nStr)
+		{
+		  nStr += '';
+		  x = nStr.split('.');
+		  x1 = x[0];
+		  x2 = x.length > 1 ? '.' + x[1] : '';
+		  var rgx = /(\d+)(\d{3})/;
+		  while (rgx.test(x1)) {
+		    x1 = x1.replace(rgx, '$1' + ',' + '$2');
+		  }
+		  return x1 + x2;
+		}
+
+		function isNumberKey(evt)
+	    {
+	       var charCode = (evt.which) ? evt.which : event.keyCode
+	       if (charCode > 31 && (charCode < 48 || charCode > 57))
+	          return false;
+	       return true;
+	     }
+
+    function copy_source_field_to_destination_field(trigger, source, destination) {
+        var trigger_object = document.getElementById(trigger);
+        var source_field = document.getElementById(source);
+        var destination_field = document.getElementById(destination);
+        if(trigger_object.checked == true){
+            destination_field.value = source_field.value;
+        }
+    }
+
+    function display_medicaid_percent_by_cms_program_type(cms_program_type_id, medicaid_percent_id){
+        var cms_program_type_object = document.getElementById(cms_program_type_id);
+        if(cms_program_type_object.value == 2){
+            Show_Section_Inline(medicaid_percent_id);
+        }else{
+            Hide_Section_Inline(medicaid_percent_id);
+        }
+    }
+
+    function Show_Section_Display(id, display) {
+        var section = document.getElementById(id);
+        var show_section = document.getElementById('show_' + id);
+        var hide_section = document.getElementById('hide_' + id);
+
+        section.style.display = display;
+        show_section.style.display = 'none';
+        hide_section.style.display = 'inline';
+    }
+
+    function Hide_Section_Display(id) {
+        var section = document.getElementById(id);
+        var show_section = document.getElementById('show_' + id);
+        var hide_section = document.getElementById('hide_' + id);
+
+        section.style.display = 'none';
+        show_section.style.display = 'inline';
+        hide_section.style.display = 'none';
+    }
+
+    function Show_Section_Block(id) {
+        var show_div = document.getElementById(id);
+        show_div.style.display = 'block';
+    }
+
+    function display_submission_files_by_attestation_status(attestation_status_id, submission_files_id){
+        var attestation_status_object = document.getElementById(attestation_status_id);
+        if([3,4,5,6].indexOf(parseInt(attestation_status_object.value)) > -1){
+            Show_Section_Block(submission_files_id);
+        }else{
+            Hide_Section_Inline(submission_files_id);
+        }
+    }
+
+    function display_attestation_history_area(group_type_id, attestation_requirement_set_history){
+        var group_type_object = document.getElementById(group_type_id);
+        if(group_type_object.value == 2){
+            Show_Section(attestation_requirement_set_history);
+        }else{
+            Hide_Section_Inline(attestation_requirement_set_history);
+        }
+    }
+
+    function Show_Section_Inline(id) {
+        var show_div = document.getElementById(id);
+        show_div.style.display = 'inline';
+    }
+
+    function Hide_Section_Inline(id) {
+        var hide_div = document.getElementById(id);
+        hide_div.style.display = 'none';
+    }
+
+    function uncheck_confirm(id) {
+        var checkbox = document.getElementById(id);
+        if (checkbox.checked == false) {
+            var answer = confirm("Are you sure you want to reset the selections to the template defaults?");
+            if (answer == false) {
+                checkbox.checked = true;
+            }
+        }
+    }
+	</script>
+
+</head>
+
+<body onLoad="load(); check_advance_search('<%= @display_advance_search_section %>'); ">
+    <% @summary = @message = '' %>
+    <%#= render(:partial => 'layouts/demo_modal') %>
+
+    <div id="hover_text_box"></div>
+	<% if @controller_name == "home" or (@controller_name == "report" and @controller_action_name[-9, 9] == "dashboard") or @controller_name == "financial_management" or @controller_name == "aci" or @controller_name == "quality" or @controller_name == 'cpia' or @controller_name == 'submission' %>
+		<div id="home">
+	<% elsif @controller_action_name[-4, 4] == "edit" or @controller_action_name[-3, 3] == "new" %>
+		<div id="form">
+	<% else -%>
+		<div id="detail">
+	<% end -%>
+		<div id="utility_nav">
+			<%= form_tag :action => "#{(action_name == 'new' || action_name.start_with?('edit'))? '' : action_name}" do %>
+                <% @not_accepted_security_levels = [5]  %>
+				<!--Welcome <%#= link_to_if((!@not_accepted_security_levels.include? @user.security_level_id), @user.get_full_name, {:controller => :utilities, :action => :edit_my_account},{}) %> of-->
+				Welcome <%= @user.get_full_name %> of
+              <div style="text-align:left; float:right; padding-left:3px;">
+              <% if @selected_groups.size > 1 %>
+					<%= select_tag(:selected_group_id, options_for_select(@selected_groups.map{|b|[case b.group_type_id; when 1;'bp_'; when 4;'md_'; else;''; end + b.name,b.id]}, @selected_group_id), {:onchange => "this.form.submit()"}) %>
+				<% else -%>
+					<%= @selected_group.name %>
+				<% end -%>
+                <% if @selected_group.group_type_id == 2 %>
+                    <%= select_tag(:selected_event_id, options_for_select(@selected_events, @selected_event_id), {:onchange => "this.form.submit()"}) %>
+                <% elsif @selected_group.group_type_id == 3 %>
+                  <%= select_tag(:selected_attestation_requirement_fiscal_year_id, options_for_select(@selected_attestation_requirement_fiscal_years, @selected_attestation_requirement_fiscal_year_id), {:onchange => "this.form.submit()"}) %>
+                  <% if @selected_attestation_requirement_stages.size > 1 and ((@controller_name == "report" and @controller_action_name[-9, 9] == "dashboard") or @controller_name == "department_management_console" or ((@controller_name == 'home' or @controller_name == 'aci' or @controller_name == 'quality' or @controller_name == 'batch_history' or @controller_action_name == 'cpia-aco_aggregation') and @selected_mum_program_view == 2)) %>
+                    <%= select_tag(:selected_attestation_requirement_stage_id, options_for_select([["All Stages", -1]]+@selected_attestation_requirement_stages, @selected_attestation_requirement_stage_id), {:onchange => "this.form.submit()"}) %>
+                    <% if(@selected_group.attestation_requirement_type_flag.to_i == 1) %>
+                        <%= select_tag(:selected_attestation_requirement_type_id, options_for_select(@selected_attestation_requirement_types, @selected_attestation_requirement_type_id), {:onchange => "this.form.submit()"}) %>
+                    <% end -%>
+                  <% else -%>
+                      <%= select_tag(:selected_attestation_requirement_stage_id, options_for_select(@selected_attestation_requirement_stages, @selected_attestation_requirement_stage_id), {:onchange => "this.form.submit()"}) %>
+                      <% if(@selected_group.attestation_requirement_type_flag.to_i == 1) %>
+                          <%= select_tag(:selected_attestation_requirement_type_id, options_for_select(@selected_attestation_requirement_types, @selected_attestation_requirement_type_id), {:onchange => "this.form.submit()"}) %>
+                      <% end -%>
+                  <% end -%>
+                <% end -%>
+
+                <div>
+                  <% if ((@attestation_clinic_filter_controllers.include? @controller_name) || (@attestation_clinic_filter_controller_actions.include? @controller_action_name)) && !(@controller_name == 'report' && (@selected_report_id == 9 || @selected_report_id == 6)) %>
+                    <% if @selected_attestation_clinics_portal.size > 1 %>
+                        <%= select_tag(:selected_attestation_clinic_id_portal, options_for_select([["ALL", -1], ['Not Set', 0]] + @selected_attestation_clinics_portal, @selected_attestation_clinic_id_portal), {:onchange => "this.form.submit()", :style => 'max-width:300px;'}) %>
+                    <% elsif @selected_attestation_clinics_portal.size == 1 -%>
+                        <%= @selected_attestation_clinics_portal.first[0] %>
+                    <% end -%>
+                  <% end -%>
+          <div style="text-align: right; float: right; margin-left: 3px; margin-bottom:10px;">
+              <ul>
+                  <li><%= @about_tab %><%#= link_to @about_tab, :controller => :utilities, :action => :about %> |</li>
+                  <!--<li><%# link_to @help_tab, "https://mum.customerhub.net/web_services/auto_login?email=Subscriber@MeaningfulUseMonitor.com&password=$XnGr892&to=meaningful-use-monitor-tools-training", :target => "_blank" %> |</li>-->
+                <li><%= link_to @help_tab, "https://macramonitor.com/macra-guru-blog", :target => "_blank" %> |</li>
+				  <!--<li><%# link_to @discussion_board_tab, "https://sp.c3partners.biz/Clients/MUMCommunity/default.aspx", :target => "_blank"  %> |</li>  -->
+                <% @not_accepted_security_levels = [5] %>
+                <% if !@not_accepted_security_levels.include? @user.security_level_id %>
+                    <li><%= link_to @log_out_tab, login_path, {method: :delete} %></li>
+				<% end -%>
+			</ul>
+            </div>
+                  <div style="text-align: right; clear: both;">
+                    <ul class="mum_program_toggle_button">
+                      <% if @user.user_type_id == 1 and [1, 2, 3, 6].include?(@user.security_level_id) %>
+                          <% if @current_batch_jobs and @current_batch_jobs > 0 %>
+                              <li><a href="javascript: display_batch_history_popup()">Batch Jobs (<%= @current_batch_jobs %>)</a></li>
+                          <% end -%>
+                      <% end -%>
+                      <% if @summary.length > 0 or @message.length > 0 %>
+                          <li id="demo_toggle"><%= link_to 'Page Help', '#', {:onclick => 'toggle_demo();'} %></li>
+                      <% end %>
+                      <%# if @selected_group.get_mips_mum_program_else_mum.mum_program_id == 2 %>
+                          <%# if @selected_mum_program_view == 1 and @selected_group.get_mips_program.active %>
+                              <!--<li><%#= link_to 'MACRA View', :controller => :home, :params => {:selected_mum_program_view => 2} %></li>-->
+                          <%# elsif @selected_mum_program_view == 2 and @selected_group.get_mum_program.active %>
+                              <!--<li><%#= link_to 'MUM View', :controller => :home, :params => {:selected_mum_program_view => 1} %></li>-->
+                          <%# end %>
+                      <%# end %>
+                    </ul>
+                    <ul>
+                      <li style="font-size: 10px;">Your session will expire in <span style="color: red;" id="1"></span></li>
+                    </ul>
+                  </div>
+                </div>
+			<% end -%>
+        </div>
+			<% if @controller_name == "requirement" and @controller_action_name[-5, 5] == "index" %>
+				<div style="display: block; margin-top: 1em;  float: right;">
+					<div style="margin-top: .5em;"><%= image_tag "/images/buttons/csv_22_icon.png", :style => "vertical-align: middle; padding-right: .3em;" %><%= link_to "Download Requirements", params.merge({:csv_download_flag => 1}), {:style => "color: #708090;"} %></div>
+				</div>
+            <% elsif @controller_name == "department" and @controller_action_name[-5, 5] == "index" %>
+                <div style="display: block; margin-top: 1em;  float: right;">
+                    <div style="margin-top: .5em;"><%= image_tag "/images/buttons/csv_22_icon.png", :style => "vertical-align: middle; padding-right: .3em;" %><%= link_to "Download Physicians", params.merge({:csv_download_flag => 1}), {:style => "color: #708090;"} %></div>
+                </div>
+            <% elsif @controller_name == "report" and @controller_action_name == "report-dashboard" %>
+              <div style="display: block; margin-top: 1em;  float: right;">
+                <div style="margin-top: .5em;"><%= image_tag "/images/buttons/csv_22_icon.png", :style => "vertical-align: middle; padding-right: .3em;" %><%= link_to "Download Reports", params.merge({:csv_download_flag => 1}), {:style => "color: #708090;"} %></div>
+              </div>
+			<% end -%>
+		</div>
+		<div class="logo">
+			<h1>Meaningful Use Monitor</h1>
+          <%#= render 'layouts/_logo' %>
+		</div>
+
+		<div class="nav">
+			<ul>
+
+                      <li><%#= link_to @home_tab, :controller => :home, :selected_side_nav_id => 5 %></li>
+                      <li><%#= link_to @aci_tab, {:controller => :aci, :action => :aci_tin_index, :selected_side_nav_id => 11, :selected_page_version_id_persist => session[:selected_page_version_id_persist]}, :class => 'side_nav' %></li>
+                      <li><%#= link_to @quality_tab, {:controller => :quality, :selected_side_nav_id => 0, :selected_page_version_id_persist => session[:selected_page_version_id_persist]}, :class => 'side_nav' %></li>
+                      <li><%#= link_to @cpia_tab, {:controller => :cpia, :selected_side_nav_id => 0, :selected_page_version_id_persist => session[:selected_page_version_id_persist]}, :class => 'side_nav' %></li>
+
+                      <% @accepted_security_levels = [1, 2, 3, 4, 6] %>
+                      <% @accepted_user_types = [1, 2] %>
+                      <% if @accepted_security_levels.include? @user.security_level_id and @accepted_user_types.include? @user.user_type_id and @selected_group.group_type_id != 1 and @selected_group.group_type_id != 4 %>
+                        <li><%#= link_to(@edit_tab, :controller => :mass_maintenance, :action => :index) %></li>
+                      <% end -%>
+                      <% @accepted_security_levels = [1, 2, 3, 4, 5, 6] %>
+                      <% if @accepted_security_levels.include? @user.security_level_id %>
+                          <% if @selected_group.group_type_id != 1 and @selected_group.group_type_id != 4 %>
+                              <% @not_accepted_security_levels = [5] %>
+                              <% if !@not_accepted_security_levels.include? @user.security_level_id %>
+                                  <li <%= @has_active_action_items ? 'class="nav_error"' : '' %>><%#= link_to @plan_manager_console_tab, :controller => :plan_manager_console %></li>
+                              <% end -%>
+                          <% end -%>
+                      <% end -%>
+                      <li><%= link_to @submission_tab, root_path(selected_side_nav_id: 0), :class => 'side_nav' %></li>
+
+                <% @accepted_security_levels = [1, 2, 3, 6] %>
+                <% @accepted_user_types = [1] %>
+                <% if @accepted_security_levels.include? @user.security_level_id and @accepted_user_types.include? @user.user_type_id%>
+                  <li><%#= link_to @admin_tab, :controller => :health_system, :action => :index %></li>
+                <% end -%>
+			</ul>
+		</div>
+    <%#= render 'layouts/_shared_navigation' %>
+        <div class="tab">
+            <% if(@selected_group.group_type_id == 3 and @selected_side_nav) %>
+        <div style="position: relative; min-height: 564px; width: 120em; border: none black 1px; margin-bottom: 1em;">
+          <div style="position: relative; float: left; width: 225px; border: none black 1px;" >
+            <div style="border-radius: 10px; border: 2px solid green; width: 175px; height: 513px;">
+              <h3 style="background-color: green; color: white; margin: .4em 0; padding: .5em; text-align: center;">Views</h3>
+              <ul style="margin-left: 1em; ">
+                    <div class="home_subnav">
+                      <ul>
+                        <% @selected_side_nav.each do |select_subnav| %>
+                            <li <%= select_subnav[5] %>>
+                              <% subnav_link = (select_subnav[1].to_i == @selected_side_nav_id.to_i) ? "<span class='subnav_selected'>#{select_subnav[0]}</span>" : select_subnav[0] %>
+                              <%#= link_to subnav_link, {:controller => select_subnav[2], :action => select_subnav[3], :selected_side_nav_id => select_subnav[1], :selected_page_version_id_persist => select_subnav[4]}, :class => 'side_nav' %>
+                              <%= link_to subnav_link.html_safe, root_path(selected_side_nav_id: select_subnav[1], selected_page_version_id_persist: select_subnav[4]), class: 'side_nav' %>
+                            </li>
+                        <% end -%>
+                        <li>
+                        </li>
+                        <% if @controller_name == 'home' %>
+                            <% if @has_qrda_3_directory %>
+                                <%= form_tag({:action => controller.action_name}, {:method => 'post'}) do %>
+                                    <li><%= link_to @import_qrda_3_files_button_text, '#', :class => "side_nav #{@import_qrda_3_files_button_color}", :onclick => 'toggle_qrda_3_import(); return false;' %></li>
+                                <% end %>
+                            <% end %>
+                        <% end %>
+                        <%# if @controller_name == 'quality' %>
+                          <!--<li><%#= link_to 'Group CQM Summary', :controller => :report, :action => 'index', :selected_report_id => 1, :selected_mum_program_view => 1, :selected_criterion_id => 4 %></li>-->
+                          <!--<li><%#= link_to 'Group CQM Detail', :controller => :report, :action => 'index', :selected_report_id => 3, :selected_mum_program_view => 1, :selected_criterion_id => 4 %></li>-->
+                        <%# end %>
+                        <%# if @controller_name == 'home' %>
+                            <!--<li><%#= link_to 'MIPS ScoreCard', :controller => :report, :action => 'index', :selected_report_id => 7, :selected_mum_program_view => 1 %></li>-->
+                        <%# end %>
+                      </ul>
+                    </div>
+              </ul>
+            </div>
+          </div>
+          <div style="display: inline-block; width: 90em; border: none black 1px;">
+            <% end -%>
+			<%= yield  %>
+          <% if(@selected_group.group_type_id == 3 and @selected_side_nav) %>
+            </div>
+          </div>
+          <% end -%>
+		</div>
+		<div id="footer">
+            <!-- TODO 5458 user managed? -->
+			<p>The Health IT Monitor portal and its contents are for authorized users ONLY.</p>
+			<p>Meaningful Use Monitor - &copy;C3Partners 2018</p>
+		</div>
+	</div>
+        <!--<script type='text/javascript' data-cfasync='false'>window.purechatApi = { l: [], t: [], on: function () { this.l.push(arguments); } }; (function () { var done = false; var script = document.createElement('script'); script.async = true; script.type = 'text/javascript'; script.src = 'https://app.purechat.com/VisitorWidget/WidgetScript'; document.getElementsByTagName('HEAD').item(0).appendChild(script); script.onreadystatechange = script.onload = function (e) { if (!done && (!this.readyState || this.readyState == 'loaded' || this.readyState == 'complete')) { var w = new PCWidget({c: '9ee4c2ea-85e7-418b-9038-82391012bfe8', f: true }); done = true; } }; })();</script>-->
+
+        <!-- Start of HubSpot Embed Code -->
+        <!--<script type="text/javascript" id=hs-script-loader" async defer src="//js.hs-scripts.com/5058082.js"></script>-->
+        <!-- End of HubSpot Embed Code -->
+</body>
+</html>

@@ -1,0 +1,271 @@
+<div id="updating_modal">
+  <div style="display: table-cell; vertical-align: middle;">
+    <div id="spinner"></div>
+  </div>
+</div>
+<%# form_tag({:action => 'upload_response_file'}, {:multipart => true}) do %>
+    <!--<div id="response_file_upload_modal">-->
+      <!--<div id="response_file_upload_window">-->
+        <!--<div class="response_file_upload_modal_close" onclick="$('upload_for_x_clinic_event_attest_method_id').value = 0; close_response_file_upload();">x</div>-->
+        <!--<h3>Response File Upload</h3>-->
+        <!--<%#= file_field_tag 'group_submission_response_file_attachment[uploaded_data]' %>-->
+        <!--<%#= hidden_field_tag :upload_for_x_clinic_event_attest_method_id, 0 %>-->
+        <!--<%#= hidden_field_tag :upload_for_attestation_requirement_set_detail_id, 0 %>-->
+        <!--<div style="float: right;">-->
+          <!--<%#= submit_tag "Upload", :name => "upload_flag", :id => "upload_button", :onclick => "this.value = 'Uploading...';" %>-->
+        <!--</div>-->
+      <!--</div>-->
+    <!--</div>-->
+<%# end %>
+<%= form_tag :action => 'index' do %>
+    <div class="mips_home_tab">
+      <h3 class="section_header">
+        TIN Submissions
+        <% if @user.id == 643 and @user.last_name.include?('Kimpel') and @user.first_name.include?('Cliff') %>
+        <span style="float: right;">
+            <ul class="refresh_button" style="margin-right: 10px;">
+              <li><%#= link_to 'cms_score', {:action => :reprocess_cms_score_content}, {:onclick => 'return link_to_confirm_and_app_updating("Are you sure you want to reprocess all CMS Score Content?");'} %></li>
+            </ul>
+        </span>
+        <% end %>
+      </h3>
+      <div class="mips_table_div scrolling_div">
+        <div class="gray_header">
+          <div>
+            <% @accepted_user_types = [1] %>
+            <% @accepted_security_levels = [1, 2, 3, 6] %>
+            <% if @accepted_user_types.include? @user.user_type_id and @accepted_security_levels.include? @user.security_level_id %>
+                <div>
+                  <%= link_to 'Edit Mode', '#', {:onclick => 'toggle_edit_mode(); return false;'} %>
+                </div>
+            <% end -%>
+          </div>
+          <h3>
+            <% if flash[:notice] -%>
+                <%= flash[:notice] %>
+            <% end -%>
+          </h3>
+        </div>
+        <table id="mips_quality_table">
+          <thead>
+          <tr>
+            <td>TIN Name</td>
+            <td>TIN</td>
+            <td>Entity Type</td>
+            <td>PI</td>
+            <td>CQM</td>
+            <td>CPIA</td>
+            <td>Resource</td>
+            <td>Submission File</td>
+            <td>Response File</td>
+            <td>Status</td>
+            <% if @user.is_business_partner? %>
+                <td>API Submission</td>
+            <% end %>
+            <td>API Response</td>
+            <td>API Status</td>
+          </tr>
+          </thead>
+          <tbody class="text_vertical_aligned_middle">
+          <% @tin_summary_attestation_clinics.each do |attestation_clinic| %>
+              <% x_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic.id, @selected_event_id) %>
+              <% attestation_clinic_methods = AttestationClinic.For_Submission_Home_By_AttestationClinic_FiscalYearID_StagingID_EventID(attestation_clinic.group_id, attestation_clinic.id, @selected_attestation_requirement_fiscal_year_id, @selected_attestation_requirement_stage_id, @selected_event_id) %>
+              <% attestation_clinic_methods.each do |attestation_clinic_method| %>
+              <% is_valid_to_submit = true %>
+              <% if x_clinic_event and x_clinic_event.default_attestation_method %>
+                  <%
+                     attestation_method = AttestationMethod.find(attestation_clinic_method.am_id)
+                     is_valid_to_submit = false if (is_valid_to_submit and attestation_method.id != x_clinic_event.default_attestation_method_id)
+
+                     is_valid_to_submit = false if (is_valid_to_submit and attestation_clinic.assigned_ec_count.to_i != attestation_clinic.ah_ec_count.to_i)
+
+                     # if x_clinic_event and x_clinic_event.default_attestation_method and x_clinic_event.default_attestation_method.has_clinic_rollup?
+                     if attestation_clinic_method.xceam_id and attestation_method.has_clinic_rollup?
+                       xceam = XClinicEventAttestMethod.find(attestation_clinic_method.xceam_id)
+                       aci_manual = (xceam.aci_use_manual_fields_flag ? 'manual_' : '')
+                       aci = attestation_clinic.send("#{aci_manual}advancing_care_info")
+                       aci_submit = xceam.aci_submit_flag
+                       quality_manual = (xceam.quality_use_manual_fields_flag ? 'manual_' : '')
+                       cqm = attestation_clinic.send("#{quality_manual}quality")
+                       quality_submit = xceam.quality_submit_flag
+                       cpia = attestation_clinic.cpia
+                       cpia_submit = xceam.cpia_submit_flag
+                       include_low_volume = attestation_method.low_volume_included_flag
+
+                       aci_multi_date_ranges_flag = (attestation_clinic.send("#{aci_manual}aci_multi_date_ranges_flag").to_i == 1)
+                       xceagr = XClinicEventAttestGroupRequirement.first_group_aci_requirement_with_date_range_by_clinic_id_and_attestation_method_id_and_event_id(attestation_clinic.id, xceam.attestation_method_id, @selected_event_id, xceam.aci_use_manual_fields_flag)
+                       aci_submission_start_date = (xceagr.nil? ? nil : xceagr.aci_start_date)
+                       aci_submission_end_date = (xceagr.nil? ? nil : xceagr.aci_end_date)
+
+                       quality_multi_date_ranges_flag = (attestation_clinic.send("#{quality_manual}quality_multi_date_ranges_flag").to_i == 1)
+                       quality_submission_start_date = attestation_clinic.send("#{quality_manual}quality_submission_start_date")
+                       quality_submission_end_date = attestation_clinic.send("#{quality_manual}quality_submission_end_date")
+
+                       department_count_with_no_assigned_aci_reqs = 0
+                       department_count_with_no_assigned_quality_reqs = 0
+                       department_count_with_no_assigned_cpia_reqs = 0
+
+                       xdcs_id_with_cpia = XDepartmentCriterionRequirement.xdcs_id_with_most_points_by_clinic_id_and_attestation_method_id_and_event_id(attestation_clinic.id, xceam.attestation_method_id, @selected_event_id)
+                     else
+                       aci = attestation_clinic.indiv_avg_advancing_care_info
+                       aci_submit = x_clinic_event.aci_submit_flag
+                       cqm = attestation_clinic.indiv_avg_quality
+                       quality_submit = x_clinic_event.quality_submit_flag
+                       cpia = attestation_clinic.indiv_avg_cpia
+                       cpia_submit = x_clinic_event.cpia_submit_flag
+                       # include_low_volume = (x_clinic_event.nil? or x_clinic_event.default_attestation_method.nil? ? false : x_clinic_event.default_attestation_method.low_volume_included_flag)
+                       aci_multi_date_ranges_flag = false
+                       aci_submission_start_date = 'N/A'
+                       aci_submission_end_date = 'N/A'
+                       quality_multi_date_ranges_flag = false
+                       quality_submission_start_date = 'N/A'
+                       quality_submission_end_date = 'N/A'
+
+                       department_count_with_no_assigned_aci_reqs = Department.count_departments_with_no_assigned_aci_requirements_by_group_id_and_attestation_clinic_id_and_event_id(attestation_clinic.group_id, attestation_clinic.id, @selected_event_id)
+                       department_count_with_no_assigned_quality_reqs = Department.count_departments_with_no_assigned_requirements_by_group_id_and_attestation_clinic_id_and_event_id_and_criterion_id(attestation_clinic.group_id, attestation_clinic.id, @selected_event_id, 4)
+                       department_count_with_no_assigned_cpia_reqs = Department.count_departments_with_no_assigned_requirements_by_group_id_and_attestation_clinic_id_and_event_id_and_criterion_id(attestation_clinic.group_id, attestation_clinic.id, @selected_event_id, 5)
+
+                       xdcs_id_with_cpia = '' # Not applicable for Individual type Attestation Method, uses department_count_with_no_assigned_cpia_reqs instead
+                     end
+                     cpia_not_assigned = (xdcs_id_with_cpia.nil? or department_count_with_no_assigned_cpia_reqs > 0)
+
+                     is_valid_to_submit = false if (is_valid_to_submit and ((aci_submit and aci.to_s.length == 0) or (quality_submit and cqm.to_s.length == 0) or (cpia_submit and cpia.to_s.length == 0)))
+
+                     is_valid_to_submit = false if (is_valid_to_submit and ((aci_submit and department_count_with_no_assigned_aci_reqs > 0) or (quality_submit and department_count_with_no_assigned_quality_reqs > 0) or (cpia_submit and cpia_not_assigned)))
+
+                     # aci_measure_dates = XDepartmentCriterionRequirement.aci_min_max_requirement_date_by_attestation_clinic_id_and_event_id_and_attestation_method_id(attestation_clinic.id, @selected_event_id, default_attestation_method_id, include_low_volume)
+                     # quality_measure_dates = XDepartmentCriterionRequirement.quality_min_max_requirement_date_by_attestation_clinic_id_and_event_id_and_attestation_method_id(attestation_clinic.id, @selected_event_id, default_attestation_method_id, include_low_volume)
+                     is_valid_to_submit = false if (is_valid_to_submit and ((aci_submit and (aci_multi_date_ranges_flag or aci_submission_start_date.nil? or aci_submission_end_date.nil?)) or (quality_submit and (quality_multi_date_ranges_flag or quality_submission_start_date.nil? or quality_submission_end_date.nil?))))
+
+                     is_valid_to_submit = false if (is_valid_to_submit and (cpia_submit and (x_clinic_event.nil? or x_clinic_event.attestation_clinic_cpia_documentation_files.size == 0)))
+
+                     is_valid_to_submit = false if (is_valid_to_submit and (x_clinic_event.nil? or x_clinic_event.default_attestation_method.nil?))
+                  %>
+                  <% if attestation_clinic_method.xceam_id and attestation_method.has_clinic_rollup? %>
+                      <%# xceam = XClinicEventAttestMethod.find_by_attestation_clinic_id_and_event_id_and_attestation_method_id(x_clinic_event.attestation_clinic_id, x_clinic_event.event_id, x_clinic_event.default_attestation_method_id) %>
+                      <%# if xceam %>
+                          <%
+                             if xceam.aci_submit_flag
+                               aci_manual = (xceam.aci_use_manual_fields_flag ? 'manual_' : '')
+                               if xceam.send("#{aci_manual}aci_multi_date_ranges_flag")
+                                 is_valid_to_submit = false
+                               end
+                             end
+                             if xceam.manual_percent_flag
+                               is_valid_to_submit = false
+                             end
+                          %>
+                          <tr>
+                            <!--<td style="text-align: left;" title="TIN Name"><%#= link_to attestation_clinic.name, :controller => 'attestation_clinic', :action => 'show', :id => attestation_clinic.id  %></td>-->
+                            <td style="text-align: left;" title="TIN Name"><%= attestation_clinic.name %></td>
+                            <td title="TIN"><%= attestation_clinic.TIN %></td>
+                            <td title="Entity Type"><%= ((attestation_method) ? attestation_method.name : 'Not Set')  %></td>
+
+                            <td title="PI">
+                              <span class="show_field"><%= check_box_tag(:aci_submit_flag, 1, xceam.aci_submit_flag, {:disabled => true}) %></span>
+                              <span class="edit_field" style="display: none;"><%= check_box_tag("xceam_aci_submit_flag[#{xceam.id}]", 1, xceam.aci_submit_flag, {:disabled => true}) %></span>
+                            </td>
+                            <td title="CQM">
+                              <span class="show_field"><%= check_box_tag(:quality_submit_flag, 1, xceam.quality_submit_flag, {:disabled => true}) %></span>
+                              <span class="edit_field" style="display: none;"><%= check_box_tag("xceam_quality_submit_flag[#{xceam.id}]", 1, xceam.quality_submit_flag, {:disabled => true}) %></span>
+                            </td>
+                            <td title="CPIA">
+                              <span class="show_field"><%= check_box_tag(:cpia_submit_flag, 1, xceam.cpia_submit_flag, {:disabled => true}) %></span>
+                              <span class="edit_field" style="display: none;"><%= check_box_tag("xceam_cpia_submit_flag[#{xceam.id}]", 1, xceam.cpia_submit_flag, {:disabled => true}) %></span>
+                            </td>
+                            <td title="Resource">
+                              <span class="show_field"><%= check_box_tag(:resource_submit_flag, 1, xceam.resource_submit_flag, {:disabled => true}) %></span>
+                              <span class="edit_field" style="display: none;"><%= check_box_tag("xceam_resource_submit_flag[#{xceam.id}]", 1, xceam.resource_submit_flag, {:disabled => true}) %></span>
+                            </td>
+                            <td title="Submission File">
+                              <% if is_valid_to_submit %>
+                                  <%#= link_to('Download', :action => 'download_submission_file', :ac_id => xceam.attestation_clinic_id, :e_id => xceam.event_id, :am_id => xceam.attestation_method_id) %>
+
+                                  <span class="show_field"><%= link_to('Download', :action => 'download_submission_file', :ac_id => xceam.attestation_clinic_id, :e_id => xceam.event_id, :am_id => xceam.attestation_method_id) %></span>
+                                  <span class="edit_field" style="display: none;">Download</span>
+                              <% end %>
+                            </td>
+                            <td title="Response File">
+                              <%#= link_to 'Upload File', '#', {:onclick => "toggle_response_file_upload('upload_for_x_clinic_event_attest_method_id', #{xceam.id});"} %>
+                              <%#= (xceam.group_submission_response_file_attachments.size > 0 and !xceam.group_submission_response_file_attachments.first.filename.nil? and xceam.group_submission_response_file_attachments.first.filename.size > 0) ? " | Recent: <span title='Current File Uploaded.  Click to view: #{xceam.group_submission_response_file_attachments.first.filename}'>#{link_to image_tag('/images/image-file-icon.png'), :controller => :upload_file, :action => :group_submission_response_file_attachment, :id => xceam.group_submission_response_file_attachments.first, :remote => true}</span>" : "" %>
+                            </td>
+                            <td title="Status">
+                              <span class="show_field"><%= x_clinic_event.submission_status ? x_clinic_event.submission_status.name : '' %></span>
+                              <span class="edit_field" style="display: none;"><%= select_tag("ac_submission_status_id[#{x_clinic_event.id}]", options_for_select([['', nil]] + @select_submission_statuses, x_clinic_event.submission_status_id), {:disabled => true}) %></span>
+                              <%#= select_tag("ac_submission_status_id[#{x_clinic_event.id}]", options_for_select([['', nil]] + @select_submission_statuses, x_clinic_event.submission_status_id)) %>
+                            </td>
+                            <% if @user.is_business_partner? %>
+                                <td title="API Submission">
+                                  <% if is_valid_to_submit and ((quality_submit and xceam.submission_method_id == SubmissionMethod.registry_id) or (!quality_submit and ((xceam.override_submission_method_id == nil and xceam.submission_method_id == SubmissionMethod.registry_id) or (xceam.override_submission_method_id == SubmissionMethod.registry_id)))) %>
+                                      <%#= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => xceam.attestation_clinic_id, :e_id => xceam.event_id, :am_id => xceam.attestation_method_id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %>
+                                      <!--API Submit-->
+
+                                      <span class="show_field"><%= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => xceam.attestation_clinic_id, :e_id => xceam.event_id, :am_id => xceam.attestation_method_id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %></span>
+                                      <span class="edit_field" style="display: none;">API Submit</span>
+                                  <% end %>
+                                </td>
+                            <% end %>
+                            <td title="API Response">
+                              <% if x_clinic_event.get_submission_status == 'Submitted with Errors' %>
+                                  <%= link_to('Errors', :action => 'api_response_errors_download_csv_file', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id) %>
+                              <% elsif x_clinic_event.get_submission_status == 'Submitted Successfully' %>
+                                  <%= link_to('File', :action => 'api_response_attestation_clinic_file_download', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id) %>
+                              <% end %>
+                            </td>
+                            <td title="API Status"><%= x_clinic_event.get_submission_status %></td>
+                          </tr>
+                      <%# end %>
+                  <% else %>
+                      <tr>
+                        <!--<td style="text-align: left;" title="TIN Name"><%#= link_to attestation_clinic.name, :controller => 'attestation_clinic', :action => 'show', :id => attestation_clinic.id  %></td>-->
+                        <td style="text-align: left;" title="TIN Name"><%= attestation_clinic.name %></td>
+                        <td title="TIN"><%= attestation_clinic.TIN %></td>
+                        <td title="Entity Type"><%= ((attestation_method) ? attestation_method.name : 'Not Set')  %></td>
+                        <td title="PI"><%= check_box_tag(:aci_submit_flag, 1, x_clinic_event.aci_submit_flag, {:disabled => true}) %></td>
+                        <td title="CQM"><%= check_box_tag(:quality_submit_flag, 1, x_clinic_event.quality_submit_flag, {:disabled => true}) %></td>
+                        <td title="CPIA"><%= check_box_tag(:cpia_submit_flag, 1, x_clinic_event.cpia_submit_flag, {:disabled => true}) %></td>
+                        <td title="Resource"><%= check_box_tag(:resource_submit_flag, 1, x_clinic_event.resource_submit_flag, {:disabled => true}) %></td>
+                        <td title="Submission File">
+                          <% if is_valid_to_submit %>
+                              <%= link_to('Download', :action => 'download_submission_file', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id, :am_id => attestation_method.id) %>
+                          <% end %>
+                        </td>
+                        <td title="Response File"><%= link_to 'Upload File', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %></td>
+                        <td title="Status">
+                          <span class="show_field"><%= x_clinic_event.submission_status ? x_clinic_event.submission_status.name : '' %></span>
+                          <span class="edit_field" style="display: none;"><%= select_tag("ac_submission_status_id[#{x_clinic_event.id}]", options_for_select([['', nil]] + @select_submission_statuses, x_clinic_event.submission_status_id), {:disabled => true}) %></span>
+                          <%#= select_tag("ac_submission_status_id[#{x_clinic_event.id}]", options_for_select([['', nil]] + @select_submission_statuses, x_clinic_event.submission_status_id)) %>
+                        </td>
+                        <% if @user.is_business_partner? %>
+                            <td title="API Submission">
+                              <% if is_valid_to_submit %>
+                                  <%= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id, :am_id => attestation_method.id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %>
+                                  <!--API Submit-->
+                              <% end %>
+                            </td>
+                        <% end %>
+                        <td title="API Response">
+                          <% if x_clinic_event.get_individual_group_submission_status == 'Submitted with Errors' %>
+                              <%= link_to 'Errors', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %>
+                          <% elsif x_clinic_event.get_individual_group_submission_status == 'Submitted Successfully' %>
+                              <%= link_to 'Files', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %>
+                          <% end %>
+                        </td>
+                        <td title="API Status"><%= x_clinic_event.get_individual_group_submission_status %></td>
+                      </tr>
+                  <% end %>
+              <% end %>
+              <% end %>
+          <% end %>
+          </tbody>
+        </table>
+        <% @accepted_user_types = [1] %>
+        <% @accepted_security_levels = [1, 2, 3, 6] %>
+        <% if @accepted_user_types.include? @user.user_type_id and @accepted_security_levels.include? @user.security_level_id %>
+            <div id="edit_save_nav" class="mips_action_nav" style="display: none; padding: .5em; margin: 1em; position: fixed; bottom: <%= (@selected_group.has_fixed_footer && @selected_mum_program_view == 2) ? '90' : '30' %>px; right: 85px; width: 120px; z-index: 300;">
+              <%= submit_tag "Save", :name => "save_flag", :id => "save_button" %>
+            </div>
+        <% end %>
+      </div>
+    </div>
+<% end %>

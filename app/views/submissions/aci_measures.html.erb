@@ -1,0 +1,126 @@
+<div id="updating_modal">
+  <div style="display: table-cell; vertical-align: middle;">
+    <div id="spinner"></div>
+  </div>
+</div>
+<% form_tag do %>
+    <div class="mips_home_tab">
+      <h3 class="section_header">EC PI Measure Submissions</h3>
+      <div class="mips_table_div scrolling_div">
+        <div class="gray_header" style="padding: 0.5em 0.5em 1.5em 0.5em;">
+          <h3>
+            <% if @selected_group.has_wordy_theme || @selected_mum_program_view != 2 %>
+                <table class="mips_group_score_table_links" style="margin: 0 0 -8px 2em; float: right;">
+                  <tr>
+                    <td class="mips_group_score_header">Score</td>
+                    <td class="mips_group_score_item_links<%= ' mips_group_score_item_links_selected' if @selected_mips_scoring_component == 1 %>">
+                      <a href="?selected_mips_scoring_component=1&selected_attestation_clinic_id_submission_persist=<%= @selected_attestation_clinic_id %>&selected_department_id=<%= @selected_department_id %>"><span class="header">Base</span><br/><span class="text"><%= @mips_scores.nil? ? @default_mips_scores : display_aci_base_score(@mips_scores.advancing_care_info_base) %></span></a>
+                    </td>
+                    <td class="mips_group_score_item_links<%= ' mips_group_score_item_links_selected' if @selected_mips_scoring_component == 2 %>">
+                      <a href="?selected_mips_scoring_component=2&selected_attestation_clinic_id_submission_persist=<%= @selected_attestation_clinic_id %>&selected_department_id=<%= @selected_department_id %>"><span class="header">Perf.</span><br/><span class="text"><%= @mips_scores.nil? ? @default_mips_scores : remove_tailing_zeroes(@mips_scores.advancing_care_info_bonus) %></span></a>
+                    </td>
+                    <td class="mips_group_score_item_links<%= ' mips_group_score_item_links_selected' if @selected_mips_scoring_component == 3 %>">
+                      <a href="?selected_mips_scoring_component=3&selected_attestation_clinic_id_submission_persist=<%= @selected_attestation_clinic_id %>&selected_department_id=<%= @selected_department_id %>"><span class="header">Bonus</span><br/><span class="text"><%= @mips_scores.nil? ? @default_mips_scores : remove_tailing_zeroes(@mips_scores.advancing_care_info_performance_bonus) %></span></a>
+                    </td>
+                    <td class="mips_group_score_total_links" style="padding: 0.3em 0;"><span class="header">Total</span><br/><span class="text"><%= @mips_scores.nil? ? @default_mips_scores : remove_tailing_zeroes(@mips_scores.advancing_care_info) %></span></td>
+                  </tr>
+                </table>
+            <% end %>
+            <div style="display: inline-table; position: relative;">
+              <%= select_tag(:selected_attestation_clinic_id_submission_persist, options_for_select([['-- Select One --', -1]] + @selected_attestation_clinics_portal, @selected_attestation_clinic_id), {:onchange => 'this.form.submit()', :style => 'width: 300px;'}) %>
+              <%= hidden_field_tag :current_attestation_clinic_id, @selected_attestation_clinic_id %>
+              <% if @selected_attestation_clinic_id > 0 %>
+                  <div style="position: absolute;">
+                    <%= select_tag(:selected_department_id, options_for_select(@selected_departments, @selected_department_id), {:onchange => 'this.form.submit()'}) %>
+                    <%= hidden_field_tag :current_department_id, @selected_department_id %>
+                  </div>
+              <% end %>
+            </div>
+            |
+            Entity Type: <%= @x_year_attestation_method.attestation_method.name if @x_year_attestation_method %>
+            <%#= hidden_field_tag :current_x_year_attestation_method_id, @selected_x_year_attestation_method_id %>
+          </h3>
+
+
+          <%= hidden_field_tag :current_mips_scoring_component, @selected_mips_scoring_component %>
+          <% if @selected_group.has_minimalist_theme && @selected_mum_program_view == 2 %>
+              <div class="scores">
+                <a href="?selected_mips_scoring_component=1&selected_attestation_clinic_id_submission_persist=<%= @selected_attestation_clinic_id %>&selected_department_id=<%= @selected_department_id %>" class="<%= ' mips_group_score_item_links_selected' if @selected_mips_scoring_component == 1 %>"><span class="header"><b>Base </b></span><span class="text"><%= @mips_scores.nil? ? '0' : display_aci_base_score(@mips_scores.advancing_care_info_base) %></span></a>
+
+                |<a href="?selected_mips_scoring_component=2&selected_attestation_clinic_id_submission_persist=<%= @selected_attestation_clinic_id %>&selected_department_id=<%= @selected_department_id %>" class="<%= ' mips_group_score_item_links_selected' if @selected_mips_scoring_component == 2 %>"><span class="header"><b>Perf. </b></span><span class="text"><%= @mips_scores.nil? ? '0' : remove_tailing_zeroes(@mips_scores.advancing_care_info_bonus) %></span></a>
+
+                |<a href="?selected_mips_scoring_component=3&selected_attestation_clinic_id_submission_persist=<%= @selected_attestation_clinic_id %>&selected_department_id=<%= @selected_department_id %>" class="<%= ' mips_group_score_item_links_selected' if @selected_mips_scoring_component == 3 %>"><span class="header"><b>Bonus </b></span><span class="text"><%= @mips_scores.nil? ? '0' : remove_tailing_zeroes(@mips_scores.advancing_care_info_performance_bonus) %></span></a>
+
+                |<a href="?selected_mips_scoring_component=-1"><span class="header"><b>Total </b></span><span class="text"><%= @mips_scores.nil? ? '0' : remove_tailing_zeroes(@mips_scores.advancing_care_info) %></span></a>
+              </div>
+          <% end %>
+
+        </div>
+        <div class="mips_home_table_div">
+          <table id="mips_quality_table">
+            <thead>
+            <tr>
+              <td style="vertical-align: bottom;">CMS ID</td>
+              <td style="vertical-align: bottom;">Requirement<br />Short Name</td>
+              <td style="vertical-align: bottom;">Expected Score</td>
+              <td style="vertical-align: bottom;">Performance Rate</td>
+              <td style="vertical-align: bottom;">CMS Score</td>
+              <td style="vertical-align: bottom;">Performance Rate</td>
+              <td style="vertical-align: bottom;">Physician Compare<br />Status</td>
+            </tr>
+            </thead>
+            <tfoot>
+            </tfoot>
+            <tbody>
+            <% @group_requirements_departments.each do |group_requirements_departments| %>
+                <tr>
+                  <td title="CMS ID"><%= group_requirements_departments.x_group_requirement.requirement.requirement_identifier %></td>
+                  <td title="<%= "Requirement Name: "+group_requirements_departments.x_group_requirement.requirement.name.to_s %>" style="text-align: left;">
+                    <% @accepted_security_levels = [1, 2, 3, 4, 6] %>
+                    <% @accepted_user_types = [1, 2] %>
+                    <% if @accepted_security_levels.include? @user.security_level_id and @accepted_user_types.include? @user.user_type_id%>
+                        <%= link_to display_report_requirement_short_name(group_requirements_departments.x_group_requirement.requirement.short_name, group_requirements_departments.x_group_requirement.requirement.name), :controller => 'department_management_console', :action => 'edit', :id => group_requirements_departments.x_department_criterion_status_id, :anchor => group_requirements_departments.id %>
+                    <% else -%>
+                        <%= link_to display_report_requirement_short_name(group_requirements_departments.x_group_requirement.requirement.short_name, group_requirements_departments.x_group_requirement.requirement.name), :controller => 'department_management_console', :action => 'show', :id => group_requirements_departments.x_department_criterion_status_id, :anchor => group_requirements_departments.id %>
+                    <% end -%>
+                  </td>
+                  <td style="text-align: left;" title="Expected Score"><%= display_aci_individual_report_component_score(@selected_mips_scoring_component, group_requirements_departments) %></td>
+                  <td class="right_align_cell">
+                    <a class="performance_rate_hover hover_help">
+                      <%= ((group_requirements_departments.x_group_requirement.requirement.requirement_measure_type_id == 3) ? display_current_yesno_measure_results(group_requirements_departments.current_measure) : (group_requirements_departments.denominator.to_f > 0) ? number_to_percentage((group_requirements_departments.numerator.to_f/group_requirements_departments.denominator.to_f)*100, :precision => 1, :delimiter => ',') : (!group_requirements_departments.current_measure_start_date.nil? or !group_requirements_departments.current_measure_end_date.nil?) ? '' : "<span class='na'>Not Set</span>") %>
+                      <span class="num_den_text_box">
+                      <b>N:</b> <%= ((group_requirements_departments.x_group_requirement.requirement.requirement_measure_type_id == 3) ? "N/A" : (!group_requirements_departments.numerator.nil? and !group_requirements_departments.denominator.nil? and (!group_requirements_departments.current_measure_start_date.nil? or !group_requirements_departments.current_measure_end_date.nil?)) ? number_to_currency(group_requirements_departments.numerator.to_i, :precision => 0, :delimiter => ',', :unit => "") : "<span class='na'>Not Set</span>") %><br/>
+                      <b>D:</b> <%= ((group_requirements_departments.x_group_requirement.requirement.requirement_measure_type_id == 3) ? "N/A" : (!group_requirements_departments.denominator.nil? and (!group_requirements_departments.current_measure_start_date.nil? or !group_requirements_departments.current_measure_end_date.nil?)) ? number_to_currency(group_requirements_departments.denominator, :precision => 0, :delimiter => ',', :unit => "") : "<span class='na'>Not Set</span>") %><br/>
+                    </span>
+                    </a>
+                  </td>
+                  <td style="text-align: left;" title="CMS Score">
+                    <% if @selected_mips_scoring_component == 1 %>
+                        <%= @mips_scores.cms_advancing_care_info.to_f > 0 ? 'Yes' : 'No' %>
+                    <% else %>
+                        <%= group_requirements_departments.cms_aci_points.to_f %>
+                    <% end %>
+                  </td>
+                  <td class="right_align_cell">
+                    <!--<a class="performance_rate_hover hover_help">-->
+                    <% if @selected_mips_scoring_component == 1 %>
+                        <%= @mips_scores.cms_advancing_care_info.to_f > 0 ? 'Yes' : 'No' %>
+                    <% else %>
+                        <%= group_requirements_departments.cms_aci_points.to_f %>
+                    <% end %>
+                    <!--<span class="num_den_text_box">-->
+                    <!--<b>N:</b> <%#= group_requirements_departments.cms_numerator %><br/>-->
+                    <!--<b>D:</b> <%#= group_requirements_departments.cms_denominator %><br/>-->
+                    <!--</span>-->
+                    </a>
+                  </td>
+                  <td title="Physician Compare Status"></td>
+                </tr>
+            <% end -%>
+            </tbody>
+
+          </table>
+        </div>
+      </div>
+    </div>
+<% end %>

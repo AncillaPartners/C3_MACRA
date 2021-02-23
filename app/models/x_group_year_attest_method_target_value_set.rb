@@ -1,0 +1,2 @@
+class XGroupYearAttestMethodTargetValueSet < ApplicationRecord
+end

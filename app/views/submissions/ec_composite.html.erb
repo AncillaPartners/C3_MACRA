@@ -1,0 +1,137 @@
+<div id="updating_modal">
+  <div style="display: table-cell; vertical-align: middle;">
+    <div id="spinner"></div>
+  </div>
+</div>
+<% form_tag :action => 'ec_composite' do %>
+    <div class="mips_home_tab">
+      <h3 class="section_header">
+        EC Composite Submissions
+        <span style="float: right;">
+          <%= select_tag(:selected_attestation_method_id_submission_persist, options_for_select(@selected_x_year_attestation_methods, @selected_x_year_attestation_method_id), {:onchange => "lose_changes_confirm(this, '#{@selected_x_year_attestation_method_id}');"}) %>
+        </span>
+      </h3>
+      <div class="mips_table_div scrolling_div">
+        <div class="gray_header">
+          <h3>
+            <%= select_tag(:selected_attestation_clinic_id_submission_persist, options_for_select([['-- Select One --', -1]] + @selected_attestation_clinics_portal, @selected_attestation_clinic_id), {:onchange => "lose_changes_confirm(this, '#{@selected_attestation_clinic_id}');"}) %>
+            Include Low Volumes <%= check_box_tag(:low_volume, '-1', @selected_low_volume == -1, {:onchange => "lose_changes_confirm(this, #{@selected_low_volume == -1});"}) %>
+            <% if @x_clinic_event_attest_method and @selected_x_year_attestation_method.attestation_method.has_clinic_rollup? %>
+                |
+                <span>
+                  <span class="show_field" <%= 'style="display: none;"' if @x_clinic_event_attest_method.manual_composite_score_flag %>><%= @x_clinic_event_attest_method.cms_mips_composite_score %></span>
+                  <span class="edit_field" <%= 'style="display: none;"' unless @x_clinic_event_attest_method.manual_composite_score_flag %>><%= text_field_tag('group_mips_composite_score', @x_clinic_event_attest_method.mips_composite_score, {:onkeypress => 'change_made();', :size => 2, :disabled => (!@x_clinic_event_attest_method.manual_composite_score_flag || nil)}) %></span>
+                </span>
+                <span>
+                  <%= link_to (@x_clinic_event_attest_method.manual_composite_score_flag ? 'Manual' : 'CMS'), '#', {:onclick => 'toggle_data_source(this); change_made();'} %>
+                </span>
+            <% end %>
+          </h3>
+        </div>
+        <div class="mips_home_table_div">
+          <% if @selected_attestation_clinic_id > 0 and @selected_x_year_attestation_method_id > 0 %>
+              <table id="mips_quality_table">
+                <% department_mips_scores = Department.Group_Departments_By_GroupID_ClinicID_EventID_XYearAttestationMethodID_UserDefinedFields_DepartmentOwnerID(@selected_group.id, @selected_attestation_clinic_id, @selected_event_id, @selected_x_year_attestation_method_id, ['-1'], @billing_info_fiscal_year.id, @selected_department_owner_id, @selected_low_volume, @selected_x_year_attestation_method.attestation_method.has_clinic_rollup?) %>
+                <thead>
+                <tr>
+                  <td>Provider Name</td>
+                  <td>NPI</td>
+                  <td>TIN</td>
+                  <td>Clinic Name</td>
+                  <td>Composite<br/>Expected</td>
+                  <td>Composite<br/>CMS</td>
+                  <td>Data Source</td>
+                  <td>Submission<br /> Confirmation #</td>
+                  <td>Physician<br /> Compare Status</td>
+                </tr>
+                </thead>
+                <tbody>
+                <% department_mips_scores.each do |department| %>
+                    <% manual_composite_score_flag = department.manual_composite_score_flag.to_i == 1 %>
+                    <tr>
+                      <td title="EC Name"><%= display_department_name1(department) %> </td>
+                      <td title="NPI"><%= display_NPI(department) %></td>
+                      <td title="TIN"><%= display_clinic_TIN(department) %></td>
+                      <td title="Clinic Name"><%= display_clinic_name(department) %></td>
+                      <% dep_score = calculate_composite_score(department, @selected_x_year_attestation_method).to_i %>
+                      <td title="Composite Expected"><%= h(dep_score) %></td>
+                      <td title="Composite CMS">
+                        <% if @selected_x_year_attestation_method.attestation_method.has_clinic_rollup? %>
+                        <% else %>
+                            <%= hidden_field_tag('d_mis_id[]', department.mis_id) %>
+                            <span class="show_field" <%= 'style="display: none;"' if manual_composite_score_flag %>><%= department.cms_mips_composite_score %></span>
+                            <span class="edit_field" <%= 'style="display: none;"' unless manual_composite_score_flag %>><%= text_field_tag("mips_composite_score[#{department.mis_id}]", department.mips_composite_score, {:onkeypress => 'change_made();', :size => 2, :disabled => (!manual_composite_score_flag || nil)}) %></span>
+                        <% end %>
+                      </td>
+                      <td title="Data Source">
+                        <% if @selected_x_year_attestation_method.attestation_method.has_clinic_rollup? %>
+                        <% else %>
+                            <%= link_to (manual_composite_score_flag ? 'Manual' : 'CMS'), '#', {:onclick => 'toggle_data_source(this); change_made();'} %>
+                        <% end %>
+                      </td>
+                      <td title="Submission Confirmation"></td>
+                      <td title="Physician Compare Status"></td>
+                    </tr>
+                <% end %>
+                </tbody>
+              </table>
+          <% end %>
+          <% accepted_security_levels = [1, 2, 3, 6] %>
+          <% accepted_user_types = [1] %>
+          <% if accepted_security_levels.include? @user.security_level_id and accepted_user_types.include? @user.user_type_id %>
+              <div id="edit_action_nav" class="mips_action_nav" style="display: none; padding: .5em; margin: 1em; position: fixed; bottom: <%= (@selected_group.has_fixed_footer && @selected_mum_program_view == 2) ? '90' : '30' %>px; right: 85px; width: 200px; z-index: 300;">
+                <%= link_to 'Cancel', {} %>&nbsp;<%= submit_tag "Save", :name => "save_flag", :id => "save_button" %>
+              </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+<% end %>
+
+<script>
+    function toggle_data_source(toggle_link) {
+        var link_text = toggle_link.firstChild.textContent;
+        if(link_text == 'CMS') {
+            link_text = 'Manual';
+        } else if(link_text == 'Manual') {
+            link_text = 'CMS';
+        }
+        toggle_link.firstChild.textContent = link_text;
+
+        var composite_cms_td = toggle_link.parentNode.previousElementSibling;
+        for (var i = 0; i < composite_cms_td.childElementCount; ++i) {
+            var span_element = composite_cms_td.childElements()[i];
+
+            if(span_element.className == 'show_field') {
+                span_element.toggle();
+            } else if(span_element.className == 'edit_field') {
+                span_element.childElements()[0].disabled = !span_element.childElements()[0].disabled;
+                span_element.toggle();
+            }
+        }
+    }
+
+    function change_made() {
+        document.getElementById('edit_action_nav').style.display = 'block';
+    }
+
+    function lose_changes_confirm(input, cur_value) {
+        var submit_form = true;
+        var edit_action_nav_display = document.getElementById('edit_action_nav').style.display;
+        if (edit_action_nav_display == 'block') {
+            var answer = confirm("You will lose any changes you have made. Are you sure you want to continue?");
+            if (answer == false) {
+                if (input.type == 'checkbox') {
+                    input.checked = cur_value;
+                } else if (input.type == 'select-one') {
+                    input.value = cur_value;
+                }
+                submit_form = false;
+            }
+        }
+
+        if (submit_form) {
+            input.form.submit();
+        }
+    }
+</script>

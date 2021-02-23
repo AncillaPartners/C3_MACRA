@@ -1,0 +1,126 @@
+<div id="updating_modal">
+  <div style="display: table-cell; vertical-align: middle;">
+    <div id="spinner"></div>
+  </div>
+</div>
+<% form_tag do %>
+    <div class="mips_home_tab">
+      <h3 class="section_header">EC CQM Measure Submissions</h3>
+
+      <div class="mips_table_div scrolling_div">
+        <div class="gray_header" style="padding: 0.5em 0.5em 1.5em 0.5em;">
+          <h3>
+            <% if @selected_attestation_clinics_portal.empty? %>
+                No Attestation Clinics
+            <% elsif @selected_x_year_attestation_methods.empty? %>
+                No Entity Types for this event
+            <% else %>
+                <div style="display: inline-table; position: relative;">
+                  <%= select_tag(:selected_attestation_clinic_id_submission_persist, options_for_select([['-- Select One --', -1]] + @selected_attestation_clinics_portal, @selected_attestation_clinic_id), {:onchange => 'this.form.submit()'}) %>
+                  <%= hidden_field_tag :current_attestation_clinic_id, @selected_attestation_clinic_id %>
+                  <% if @selected_attestation_clinic_id > 0 %>
+                      <div style="position: absolute;">
+                        <%= select_tag(:selected_department_id, options_for_select(@selected_departments, @selected_department_id), {:onchange => 'this.form.submit()'}) %>
+                        <%= hidden_field_tag :current_department_id, @selected_department_id %>
+                      </div>
+                  <% end %>
+                </div>
+                |
+                Entity Type: <%= @x_year_attestation_method.attestation_method.name if @x_year_attestation_method %>
+                |
+                <%= @x_year_attestation_method.cqm_target_selected_number.to_i  if @x_year_attestation_method %>
+                <%#= hidden_field_tag :current_x_year_attestation_method_id, @selected_x_year_attestation_method_id %>
+            <% end %>
+          </h3>
+        </div>
+        <div class="mips_home_table_div">
+          <table id="mips_quality_table">
+            <thead>
+            <tr>
+              <td rowspan="2" style="vertical-align: bottom; text-align: left;"><%= select_tag(:measure_identifier, options_for_select(@selected_measure_identifier), {:onchange => 'change_measure_identifier(this);'}) %></td>
+              <td rowspan="2" style="vertical-align: bottom; text-align: left;">Requirement Name</td>
+
+              <td colspan="5">Expected</td>
+
+              <td colspan="5">CMS</td>
+            </tr>
+            <tr>
+              <td style="vertical-align: bottom;">Performance Rate</td>
+              <td style="vertical-align: bottom;">Decile Points</td>
+              <td style="vertical-align: bottom; width: 5em;">Priority Bonus</td>
+              <td style="vertical-align: bottom;">CEHRT Bonus</td>
+              <td style="vertical-align: bottom;">Score</td>
+
+              <td style="vertical-align: bottom;">Performance Rate</td>
+              <td style="vertical-align: bottom;">Decile Points</td>
+              <td style="vertical-align: bottom; width: 5em;">Priority Bonus</td>
+              <td style="vertical-align: bottom;">CEHRT Bonus</td>
+              <td style="vertical-align: bottom;">Score</td>
+            </tr>
+            </thead>
+            <tfoot></tfoot>
+            <tbody>
+            <% @department_requirements.each do |x_dep_req| %>
+                <tr>
+                  <td title="CMS ID" class="cms_id measure_id" style="text-align: left;">
+                    <%= x_dep_req.requirement.requirement_identifier %>
+                  </td>
+                  <td title="CMS E-Measure ID" class="cms_emeasure_id measure_id" style="text-align: left; display: none;">
+                    <%= x_dep_req.requirement.cms_emeasure_id %>
+                  </td>
+                  <td title="NQF ID" class="nqf_id measure_id" style="text-align: left; display: none;">
+                    <%= x_dep_req.requirement.nqf %>
+                  </td>
+
+                  <td title="Requirement Name" style="text-align: left;"><%= x_dep_req.requirement.name %></td>
+
+                  <td title="Expected Performance Rate">
+                    <a class="performance_rate_hover hover_help">
+                      <%= x_dep_req.performance_rate %>
+                      <span class="num_den_text_box">
+                          <b>N:</b> <%= x_dep_req.requirement.cqm_overall_algorithm_id.nil? ? x_dep_req.numerator : 'N/A' %><br/>
+                          <b>D:</b> <%= x_dep_req.requirement.cqm_overall_algorithm_id.nil? ? x_dep_req.denominator : 'N/A' %>
+                        </span>
+                    </a>
+                  </td>
+                  <td title="Expected Decile Points"><%= x_dep_req.decile_points %></td>
+                  <td title="Expected Priority Bonus"><%= x_dep_req.priority_bonus_points %></td>
+                  <td title="Expected CEHRT Bonus"><%= x_dep_req.cehrt_bonus_points %></td>
+                  <td title="Expected Score"><%= x_dep_req.total_decile_points %></td>
+
+                  <td title="CMS Performance Rate">
+                    <a class="performance_rate_hover hover_help">
+                      <%= x_dep_req.cms_performance_rate %>
+                      <span class="num_den_text_box">
+                          <b>N:</b> <%= x_dep_req.requirement.cqm_overall_algorithm_id.nil? ? x_dep_req.cms_numerator : 'N/A' %><br/>
+                          <b>D:</b> <%= x_dep_req.requirement.cqm_overall_algorithm_id.nil? ? x_dep_req.cms_denominator : 'N/A' %>
+                        </span>
+                    </a>
+                  </td>
+                  <td title="CMS Decile Points"><%= x_dep_req.cms_decile_points %></td>
+                  <td title="CMS Priority Bonus"><%= x_dep_req.cms_priority_bonus_points %></td>
+                  <td title="CMS CEHRT Bonus"><%= x_dep_req.cms_cehrt_bonus_points %></td>
+                  <td title="CMS Score"><%= x_dep_req.cms_total_decile_score %></td>
+                </tr>
+            <% end -%>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script>
+        function change_measure_identifier(input) {
+            var i, size;
+
+            var measure_identifiers = document.getElementsByClassName('measure_id');
+            for (i = 0, size = measure_identifiers.length; i < size; i++) {
+                measure_identifiers[i].style.display = 'none';
+            }
+
+            var measure_identifiers_display = document.getElementsByClassName(input.value);
+            for (i = 0, size = measure_identifiers_display.length; i < size; i++) {
+                measure_identifiers_display[i].style.display = 'table-cell';
+            }
+        }
+    </script>
+<% end %>

@@ -1,0 +1,42 @@
+<div id="updating_modal">
+  <div style="display: table-cell; vertical-align: middle;">
+    <div id="spinner"></div>
+  </div>
+</div>
+<% form_tag :action => 'index' do %>
+<div class="mips_home_tab">
+  <h3 class="section_header">TIN PI Submissions</h3>
+  <div class="mips_table_div scrolling_div">
+    <table id="mips_quality_table">
+      <thead>
+      <tr>
+        <td>Clinic Name</td>
+        <td>TIN</td>
+        <td>Method</td>
+        <td>Status</td>
+        <td>PI<br />Expected</td>
+        <td>PI<br />CMS</td>
+        <td>Submission<br />Confirmation#</td>
+        <td>Physician<br />Compare Status</td>
+      </tr>
+      </thead>
+      <tbody class="text_vertical_aligned_middle">
+        <% @tin_summary_attestation_clinics.each do |attestation_clinic| %>
+          <%# x_clinic_event_attest_method = XClinicEventAttestMethod.find(attestation_clinic.xceam_id) if attestation_clinic.xceam_id %>
+          <%# use_manual_fields_flag = (x_clinic_event_attest_method ? x_clinic_event_attest_method.aci_use_manual_fields_flag : false) %>
+          <tr>
+            <td title="Clinic Name"><%= attestation_clinic.name %></td>
+            <td title="TIN"><%= attestation_clinic.TIN %></td>
+            <td title="Method"><%= ((attestation_clinic.attestation_method_name) ? attestation_clinic.attestation_method_name : 'Not Set') %></td>
+            <td title="Status"></td>
+            <td title="PI Expected"><%= (attestation_clinic.aci_use_manual_fields_flag == '1') ? remove_tailing_zeroes(attestation_clinic.manual_advancing_care_info, 0) : remove_tailing_zeroes(attestation_clinic.advancing_care_info, 0) %></td>
+            <td title="PI CMS"><%= remove_tailing_zeroes(attestation_clinic.cms_advancing_care_info, 1) %></td>
+            <td title="Submission Confirmation#"></td>
+            <td title="Physician Compare Status"></td>
+          </tr>
+      <% end -%>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% end %>

@@ -1,0 +1,55 @@
+<% form_tag do %>
+    <div class="mips_home_tab">
+      <h3 class="section_header">EC CPIA Measure Submissions</h3>
+      <div class="mips_table_div scrolling_div">
+        <div class="gray_header" style="padding: 0.5em 0.5em 1.5em 0.5em;">
+          <h3>
+            <div style="display: inline-table; position: relative;">
+              <%= select_tag(:selected_attestation_clinic_id_submission_persist, options_for_select([['-- Select One --', -1]] + @selected_attestation_clinics_portal, @selected_attestation_clinic_id), {:onchange => 'this.form.submit()'}) %>
+              <%= hidden_field_tag :current_attestation_clinic_id, @selected_attestation_clinic_id %>
+              <% if @selected_attestation_clinic_id > 0 %>
+                  <div style="position: absolute;">
+                    <%= select_tag(:selected_department_id, options_for_select(@selected_departments, @selected_department_id), {:onchange => 'this.form.submit()'}) %>
+                    <%= hidden_field_tag :current_department_id, @selected_department_id %>
+                  </div>
+              <% end %>
+            </div>
+            |
+            Entity Type: <%= @x_year_attestation_method.attestation_method.name if @x_year_attestation_method %>
+          </h3>
+        </div>
+        <div class="mips_home_table_div">
+          <table id="mips_quality_table">
+            <thead>
+            <tr>
+              <td>CMS ID</td>
+              <td>Title</td>
+              <td>Weighting</td>
+              <td>Expected Points</td>
+              <td>Expected Selected</td>
+              <td>CMS Points</td>
+              <td>CMS Selected</td>
+            </tr>
+            </thead>
+            <tbody class="text_vertical_aligned_middle">
+            <% @department_requirements.each do |x_dep_req| %>
+                <tr>
+                  <td title="CMS ID"><%= display_sub_measure(x_dep_req.requirement.sub_measure) %></td>
+                  <td title="Title" style="font-weight: normal; overflow: auto;">
+                    <div style="height: 8em;">
+                      <%= display_text_area_values(x_dep_req.requirement.regulatory_language) %>
+                    </div>
+                  </td>
+                  <td title="Weighting"><%= display_weight(x_dep_req.requirement.score) %></td>
+                  <td title="Expected Points"><%= x_dep_req.requirement.score if x_dep_req.cpia_select_flag %></td>
+                  <td title="Expected Selected"><%= check_box_tag :expected_selected, 1, x_dep_req.cpia_select_flag, {:disabled => true} %></td>
+                  <td title="CMS Points"><%= remove_tailing_zeroes(x_dep_req.cms_cpia_points) %></td>
+                  <td title="CMS Selected"><%= check_box_tag :expected_selected, 1, x_dep_req.cms_submitted_flag, {:disabled => true} %></td>
+                </tr>
+            <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+<% end %>

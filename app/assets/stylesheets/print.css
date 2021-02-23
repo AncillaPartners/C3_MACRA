@@ -1,0 +1,294 @@
+body 
+{
+	background-color: #FFF;
+	color: #000;
+    font-family: Helvetica, Arial, sans-serif;  
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 1.3em;
+    padding: 0;
+    margin: 20px 0;
+}
+
+/*==================*/
+/* #TYPOGRAPHY      */
+/*==================*/
+
+h1 {display: none;}
+h2 {font-weight: bold; color: #1c1c1c; font-size: 2em; margin: 0 0 .6em 0; padding: 0;}
+h3 {color: #404040; font-size: 1.6em; margin: .4em 0; padding: 0;}
+h4 {color: #404040; font-size: 1.2em; margin: .7em 0 .4em 0; padding: 0 0 .1em 0; border-bottom: 1px solid #689c36; clear: left;}
+h5 {color: #404040; font-size: 1.2em; margin: 0 0 .4em 0; padding: 0;}
+
+a {color: #000; text-decoration: underline;}
+a:hover {color: #000; text-decoration: none;}
+
+/*=================*/
+/* PAGE TYPES      */
+/*=================*/
+
+#home {width: 90%; margin: 0 auto 2em auto; padding: 0; background-color: #FFF;}
+#login {margin: 60px auto; text-align: center; width: 720px; font-size: 1.2em; border-top: 1px solid #666; border-bottom: 1px solid #666;}
+#content {width: 90%; margin: 0 auto 2em auto; padding: 0; background-color: #FFF;}
+#form {width: 90%; margin: 0 auto 2em auto; padding: 0; background-color: #FFF;}
+#list {width: 90%; margin: 0 auto 2em auto; padding: 0; background-color: #FFF;}
+#detail {width: 90%; margin: 0 auto 2em auto; padding: 0; background-color: #FFF;}
+
+/*=================*/
+/* INCLUDES        */
+/*=================*/
+
+#footer {text-align: center; padding: 1em 0 0 0;}
+#footer_public {text-align: center; font-size: .8em; padding: 1em 0 0 0; border-top: 3px solid #3a9946;}
+
+/*=================*/
+/* TABLES          */
+/*=================*/
+
+table {border: 1px solid #689c36; background-color: none; width: 100%; margin: .5em 0 1em 0; clear: both;}
+table thead tr td {vertical-align: middle;}
+table td {text-align: left; border: none; padding: .3em; font-weight: bold; font-size: 1.1em; vertical-align: top;}
+tbody td {border: 1px solid #999;}
+thead td {background-color: #e3e3e3; font-weight: bold; vertical-align: top; font-size: 1.3em;}
+tfoot {background-color: #e3e3e3; font-weight: bold;;}
+tfoot td {border-top: 2px solid #689c36}
+table thead select {font-size: .9em; margin: 0 .5em 0 0;}
+
+/*=================*/
+/* RESULTS        */
+/*=================*/
+
+table.results {}
+table.results tbody {font-size: 1.5em;}
+
+span.results_label {display: block; font-size: .8em; margin: .5em 0 0 0; font-weight: normal;}
+span.ranges {display: block; font-size: .7em; margin: .5em 0 0 0; font-weight: normal;}
+span.metric {display: block; font-size: 1.5em; margin: .5em 0;}
+
+/*td.good {background-color: #3a9946;}
+td.good a, a:hover {}
+td.fair {background-color: #babe33;}
+td.fair a, a:hover {}
+td.poor {background-color: #e21f26;}
+td.poor  a, a:hover {}
+td.needs_test {color: #e3e3e3; background-color: #404040;}
+td.needs_test a, a:hover {color: #e3e3e3;}*/
+
+/*===================*/
+/* FORM PAGE         */
+/*===================*/
+
+#form form {margin: 1em 0 0 0; padding: 0;}
+#form label {clear: left; display: block; padding: 0; margin: .5em 0 .2em 0; font-weight: bold; }
+#form input {float: left; padding: .2em; margin: 0 .5em .7em 0;}
+#form select {display: block; margin: 0 0 .3em 0;}
+
+#form table {border: 1px solid #689c36; background-color: none; width: 100%; margin: .5em 0 1em 0;}
+#form table td {vertical-align: middle; text-align: left; border: none; padding: .3em; font-weight: bold; font-size: 1.2em;}
+#form tbody td {border-top: 1px solid #999;}
+#form thead td {background-color: #e3e3e3; font-weight: bold; vertical-align: top;}
+#form tfoot {background-color: #e3e3e3; font-weight: bold;;}
+#form tfoot td {border-top: 2px solid #689c36}
+
+#form h4 {color: #689c36; font-size: 1.3em; margin: .7em 0; padding: .3em 0 .3em .3em; clear: left; border: 1px solid #689c36; background-color: #e3e3e3;}
+#form p {margin: 0; padding: 0;}
+
+.cancel {float: left; border: 1px solid red;}
+.button {margin: 1em 0; clear: left; display: block;}
+.edit {margin: 0 0 0 .8em; padding: 0; color: #70731F;}
+.helptext {color: #666; margin: 0 0 0 .4em; padding: 0; font-variant: italic;}
+.empty {color: #666; font-variant: italic;}
+
+ul.recipients li {clear: left;}
+
+/*===================*/
+/* LOGIN             */
+/*===================*/
+
+#login form {width: 70%; margin: 0 auto 2em auto; text-align: left; padding: 1em 0 1em 1em; background-color: #efefef; border: 1px solid #666;}
+#login label {display: block; padding: 0; margin: .5em 0 .2em 0; font-weight: bold;}
+#login input {display: block; padding: .2em; margin: .4em 0 .2em 0; font-size: 1.2em;}
+#login select {display: inline;}
+
+.forgot {margin: 0 0 0 .3em; color: #666; display: inline; font-size: .9em;}
+
+/*========================*/
+/* TABLES - DASHBOARD     */
+/*========================*/
+
+td.compliant {width: 150px; background-color: #47933a; text-align: center; vertical-align: middle;}
+
+td.inprogress {width: 150px; background-color: #ccaf06; text-align: center; vertical-align: middle;}
+
+td.unknown {width: 150px; background-color: #d32924; text-align: center; vertical-align: middle;}
+
+/*=================*/
+/* FOOTER          */
+/*=================*/
+
+#footer ul {list-style-type: none; margin: 0; padding: 0;}
+#footer li {display: inline; padding: 0 20px 0 0; color: #404040;}
+#footer a {color: #404040; text-decoration: underline; font-weight: bold;}
+#footer a:hover {color: #404040; text-decoration: none; font-weight: bold;}
+#footer p {padding: 0; margin: .4em 0;}
+
+/*===============================*/
+/* FOOTER   for Login Page       */
+/*===============================*/
+
+#footer_public ul {list-style-type: none; margin: 0; padding: 0;}
+#footer_public li {display: inline; padding: 0 20px 0 0; color: #404040;}
+#footer_public a {color: #404040; text-decoration: underline; font-weight: bold;}
+#footer_public a:hover {color: #404040; text-decoration: none; font-weight: bold;}
+#footer_public p {padding: 0; margin: .4em 0;}
+
+/*===============================*/
+/* TAB STRUCTURE                 */
+/*===============================*/
+
+.tab {padding: 25px 10px 10px 15px; margin: 0 7px 9px 7px; border: 1px solid #000; clear: left; position: relative; background-color: #FFF;}
+.tab ul {margin: 0 0 10px 0; padding: 0 0 2px 0; list-style: none; z-index: 1; position: relative;}
+.tab ul li {}
+.tab select {font-size: .8em; font-family: Helvetica, Arial, sans-serif; padding: .1em;}
+
+/*=================*/
+/* LIST            */
+/*=================*/
+
+#list table {border: 1px solid #689c36; background-color: none; width: 100%; margin: .5em 0 1em 0;}
+#list table td {vertical-align: middle; text-align: left; border: none; padding: .3em; font-weight: bold; font-size: 1.2em;}
+#list tbody td {border-top: 1px solid #999;}
+#list thead td {background-color: #e3e3e3; font-weight: bold; vertical-align: top; padding: .3em;}
+#list tfoot {background-color: #e3e3e3; font-weight: bold;;}
+#list tfoot td {border-top: 2px solid #689c36; padding: .3em;}
+#list h2 {}
+#list h3 {margin: 1em 0 .2em 0;}
+#list table thead td select {display: block; font-weight: bold;}
+#list table td input {padding: 0;}
+#list label {display: inline; padding: 0; margin: 0 .5em 0 0; font-weight: bold;}
+
+
+/*=================*/
+/* DETAIL          */
+/*=================*/
+
+#detail table {border: 1px solid #689c36; background-color: none; width: 100%; margin: .3em 0 .5em 0;}
+#detail table td {vertical-align: middle; text-align: left; border: none; padding: .3em; font-weight: bold; font-size: 1.1em;}
+#detail tbody td {border-top: 1px solid #999;}
+#detail thead td {background-color: #e3e3e3; font-weight: bold; vertical-align: top;}
+#detail tfoot {background-color: #e3e3e3; font-weight: bold;}
+#detail tfoot td {border-top: 2px solid #689c36}
+#detail h2 {margin: 0 0 1em 0;}
+#detail h3 {margin: 0 0 .5em 0;}
+#detail h4 {color: #689c36; font-size: 1.3em; margin: .7em 0; padding: .3em 0 .3em .3em; clear: left; border: 1px solid #689c36; background-color: #e3e3e3;}
+#detail .edit {background-color: #f4f4f4;}
+
+.display {border: 1px solid #689c36; margin: 1em 0; padding: 0 1em; background-color: #f4f4f4;}
+.display p {margin: .2em 0 .4em 0; padding: 0; font-weight: bold; font-size: 1.1em; clear: left;}
+.display img {padding: .5em; border: 1px solid #999; margin: 0 1em 1em 0;}
+.display label {color: #70731f; margin: 0 .8em 0 0; float: left; position: relative; z-index: 10; border: 1px solid #f4f4f4;}
+
+.message {border: 1px solid #689c36; margin: 1em 0; padding: 1em; background-color: #f4f4f4;}
+
+.caption {color: #70731F;}
+
+/*======*/
+/* LOGO */
+/*======*/
+
+.logo {text-align: left; padding: 0 0 0 10px; margin: 0;}
+.logo_public {text-align: left; padding: 0; margin: 0; border: 1px solid blue;}
+
+/*===================*/
+/* MAIN NAVIGATION   */
+/*===================*/
+
+.nav_selected {color: #000;}
+.selected {color: #000;}
+
+.disabled {
+	color: #afafaf;
+	margin: 10px 10px 0 0;   /* horizontal space between tabs */
+	padding: 0;
+	border: 1px solid red;
+	height: 30px;
+	padding: 0;
+}
+
+.nav {clear: both; margin: 5px 7px 0 7px; font-size: 1.2em;}
+.nav ul {margin: 0;  padding: 0; list-style: none; height: 23px; text-decoration: none;}
+.nav ul li {margin: 0 10px 0 0; padding: 0; float: left; color: #d10018; font-weight: bold; height: 30px;}
+.nav ul li a {
+    display: block;
+    float: left;
+	text-decoration: none;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-color: #FFF;
+    border-top: 1px solid #000;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+	border-bottom: 0;
+    font-weight: bold;  
+    height: 22px;
+	margin: 0;
+	padding: 7px 9px 0 9px;
+	color: #666;
+}
+.nav ul li a:hover {
+    background-color: #e3e3e3;
+  	border-color: #000;
+	color: #404040;
+}
+
+/* ====================*/
+/* UTILITY NAVIGATION */
+/* ====================*/
+
+#utility_nav {text-align: right; padding: 0; margin: 0 15px 0 0; color: #000; font-weight: bold;}
+#utility_nav ul {list-style-type: none; margin: 0; padding: 0;}
+#utility_nav li {display: inline; padding: 0;}
+#utility_nav a {color: #666;}
+
+/*==============*/
+/*MESSAGING     */
+/*==============*/
+
+.yes {color: #47933a; font-weight: bold;}
+
+.compliant {color: #47933a;}
+.compliant a {color: #efefef; text-decoration: underline;}
+.compliant a:hover {color: #efefef; text-decoration: none;}
+
+span.compliant {font-weight: bold;}
+
+.inprogress {color: #ccaf06;}
+.inprogress a {color: #efefef; text-decoration: underline;}
+.inprogress a:hover {color: #efefef; text-decoration: none;}
+
+span.inprogress {font-weight: bold;}
+
+.unknown {color: #d32924;}
+.unknown a {color: #efefef; text-decoration: underline;}
+.unknown a:hover {color: #efefef; text-decoration: none;}
+
+span.unknown {font-weight: bold;}
+
+
+/*==============*/
+/*CONTENT       */
+/*==============*/
+
+div.topic {border: 1px solid #666; background-color: #efefef; margin: 1em 0; padding: 1em 1em 0 1em;}
+div.topic p a, a:hover {color: #47933a; font-weight: bold;}
+
+/*=======================*/
+/*CYA and MISC Kludges   */
+/*=======================*/
+
+img {border: 0;}
+.hospital_logo {float: left; margin: 0 0 .5em 0; vertical-align: middle; }
+.clearleft {clear: left;}
+
+.form_kludge {}
+.form_kludge label {font-weight: bold; margin: 0 .5em 0 0;}

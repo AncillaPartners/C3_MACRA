@@ -1,0 +1,2 @@
+class AttestationClinicCpiaDocumentationFile < ApplicationRecord
+end

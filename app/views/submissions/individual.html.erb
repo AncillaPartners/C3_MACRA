@@ -1,0 +1,94 @@
+<div id="updating_modal">
+  <div style="display: table-cell; vertical-align: middle;">
+    <div id="spinner"></div>
+  </div>
+</div>
+<% form_tag({:action => 'upload_indiv_response_file'}, {:multipart => true}) do %>
+    <div id="response_file_upload_modal">
+      <div id="response_file_upload_window">
+        <div class="response_file_upload_modal_close" onclick="$('upload_for_attestation_requirement_set_detail_id').value = 0; close_response_file_upload();">x</div>
+        <h3>Response File Upload</h3>
+        <%= file_field_tag 'group_submission_response_file_attachment[uploaded_data]' %>
+        <%= hidden_field_tag :upload_for_attestation_requirement_set_detail_id, 0 %>
+        <div style="float: right;">
+          <%= submit_tag "Upload", :name => "upload_flag", :id => "upload_button" %>
+        </div>
+      </div>
+    </div>
+<% end %>
+<% form_tag :action => 'individual' do %>
+    <div class="mips_home_tab">
+      <h3 class="section_header">
+        TIN Submissions
+        <span style="float: right;">
+          <%= select_tag(:selected_page_version_id_persist, options_for_select(@selected_attestation_methods, @selected_page_version_id), {:onchange => 'this.form.submit()'}) %>
+        </span>
+      </h3>
+      <div class="mips_table_div scrolling_div">
+        <% if flash[:notice] -%>
+            <p><%= flash[:notice] %></p>
+        <% end -%>
+        <table id="mips_quality_table">
+          <thead>
+          <tr>
+            <td>EC Name</td>
+            <td>NPI</td>
+            <td>Entity Type</td>
+            <td>PI</td>
+            <td>CQM</td>
+            <td>CPIA</td>
+            <td>Resource</td>
+            <td>Response File</td>
+            <% if @user.is_business_partner? %>
+                <td>API Submission</td>
+            <% end %>
+            <td>API Response</td>
+            <td>API Status</td>
+          </tr>
+          </thead>
+          <tbody class="text_vertical_aligned_middle">
+          <% @tin_summary_attestation_clinics.each do |attestation_clinic| %>
+                <% @providers.each do |xdarsd| %>
+              <% x_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic.id, @selected_event_id) %>
+                  <% department = Department.find(xdarsd.department_id) %>
+              <% if x_clinic_event %>
+          <% atrsd = AttestationRequirementSetDetail.find(xdarsd.attestation_requirement_set_detail_id) %>
+                      <tr>
+                        <td style="text-align: left;" title="TIN Name"><%= display_department_name1(department) %></td>
+                        <td title="NPI"><%= display_NPI(department) %></td>
+                        <td title="Entity Type"><%= ((atrsd.x_year_attestation_method) ? atrsd.x_year_attestation_method.attestation_method.name : 'Not Set')  %></td>
+                        <td title="PI"><%= check_box_tag(:aci_submit_flag, 1, x_clinic_event.aci_submit_flag, {:disabled => true}) %></td>
+                        <td title="CQM"><%= check_box_tag(:quality_submit_flag, 1, x_clinic_event.quality_submit_flag, {:disabled => true}) %></td>
+                        <td title="CPIA"><%= check_box_tag(:cpia_submit_flag, 1, x_clinic_event.cpia_submit_flag, {:disabled => true}) %></td>
+                        <td title="Resource"><%= check_box_tag(:resource_submit_flag, 1, x_clinic_event.resource_submit_flag, {:disabled => true}) %></td>
+                        <td title="Response File">
+                          <%= link_to 'Upload File', '#', {:onclick => "toggle_response_file_upload('upload_for_attestation_requirement_set_detail_id', #{xdarsd.attestation_requirement_set_detail_id});"}  %>
+                          <%= (atrsd.individual_submission_response_file_attachments.size > 0 and !atrsd.individual_submission_response_file_attachments.first.filename.nil? and atrsd.individual_submission_response_file_attachments.first.filename.size > 0) ? " | Recent: <span title='Current File Uploaded.  Click to view: #{atrsd.individual_submission_response_file_attachments.first.filename}'>#{link_to image_tag('/images/image-file-icon.png'), :controller => :upload_file, :action => :individual_submission_response_file_attachment, :id => atrsd.individual_submission_response_file_attachments.first, :remote => true}</span>" : "" %>
+                        </td>
+                        <% if @user.is_business_partner? %>
+                            <td title="API Submission">
+                                <% if atrsd.submission_method_id == SubmissionMethod.registry_id %>
+                                  <%= link_to('API Submit', {:action => 'api_submit_department_submission_file', :d_id => department.id, :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %>
+                                  <!--API Submit-->
+                                <% end %>
+                            </td>
+                        <% end %>
+                        <td title="API Response">
+                          <% if x_clinic_event.get_individual_submission_status(department.npi) == 'Submitted with Errors' %>
+                              <%= link_to('Errors', :action => 'api_response_department_errors_download_csv_file', :d_id => department.id, :ac_id => x_clinic_event.attestation_clinic_id, :arfy_id => x_clinic_event.event.attestation_requirement_fiscal_year_id) %>
+                          <% elsif x_clinic_event.get_individual_submission_status(department.npi) == 'Submitted Successfully' %>
+                              <%= link_to('File', :action => 'api_response_department_file_download', :d_id => department.id, :ac_id => x_clinic_event.attestation_clinic_id, :arfy_id => x_clinic_event.event.attestation_requirement_fiscal_year_id) %>
+                          <% end %>
+                        </td>
+                        <td title="API Status"><%= x_clinic_event.get_individual_submission_status(department.npi) %></td>
+                      </tr>
+              <% end %>
+          <% end %>
+          <% end %>
+          </tbody>
+        </table>
+        <% @accepted_user_types = [1] %>
+        <% @accepted_security_levels = [1, 2, 3, 6] %>
+      </div>
+    </div>
+<% end %>

@@ -1,0 +1,2 @@
+class XGroupYear < ApplicationRecord
+end

@@ -1,0 +1,2 @@
+class AttestationRequirementFiscalYear < ApplicationRecord
+end

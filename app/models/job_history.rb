@@ -1,0 +1,2 @@
+class JobHistory < ApplicationRecord
+end
