@@ -1,4 +1,5 @@
 class Requirement < ApplicationRecord
+  belongs_to  :metric_type
 
   def self.new_group_requirements(selected_group_id)
     conditions = {}

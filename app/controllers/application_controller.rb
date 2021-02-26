@@ -855,6 +855,883 @@ class ApplicationController < ActionController::Base
     return true
   end
 
+  def qpp_submission_api_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id)
+    attestation_clinic = AttestationClinic.find attestation_clinic_id
+    if !attestation_clinic.group.qpp_api_token.blank?
+      qpp_direct_submit_api_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id)
+    else
+      suncoast_submit_api_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id)
+    end
+  end
+
+  def qpp_direct_submit_api_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id)
+    body_set = qpp_submission_object_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id)
+    if body_set.size > 0
+      fiscal_year = AttestationRequirementFiscalYear.find_by_name(body_set[:performanceYear])
+      attestation_clinic = AttestationClinic.find(attestation_clinic_id)
+      if attestation_clinic.group_id == @selected_group_id and fiscal_year
+        # Response.destroy_all(:attestation_clinic_id => attestation_clinic_id,
+        #                      :attestation_requirement_fiscal_year_id => fiscal_year.id)
+        response = Response.find_or_create_by(:attestation_clinic_id => attestation_clinic_id,
+                                              :tin => body_set[:taxpayerIdentificationNumber],
+                                              :npi => body_set[:nationalProviderIdentifier],
+                                              :attestation_requirement_fiscal_year_id => fiscal_year.id)
+        response.response_errors.delete_all
+        response.update_attribute(:content, nil)
+
+        token = attestation_clinic.group.qpp_api_token
+        submission_fields = {:entityType => body_set[:entityType],
+                             :taxpayerIdentificationNumber => body_set[:taxpayerIdentificationNumber],
+                             :nationalProviderIdentifier => body_set[:nationalProviderIdentifier],
+                             :performanceYear => body_set[:performanceYear]}
+        body_set[:measurementSets].each do |measurement_set|
+          category = measurement_set[:category]
+          base_api = ApplicationConfiguration.get_qpp_submission_api_endpoint + 'measurement-sets'
+
+          measurement_set_id_for_category = nil
+          case category
+            when 'pi'
+              measurement_set_id_for_category = response.aci_measurement_set_id
+            when 'quality'
+              measurement_set_id_for_category = response.quality_measurement_set_id
+            when 'ia'
+              measurement_set_id_for_category = response.cpia_measurement_set_id
+          end
+
+          if measurement_set_id_for_category.nil?
+            uri = URI.parse(base_api)
+            request = Net::HTTP::Post.new(uri.request_uri, 'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json')
+            measurement_set[:submission] = submission_fields
+          else # measurement_set_id for category exists, do PUT and append measurement_set_id to base_api
+            base_api += "/#{measurement_set_id_for_category}"
+            uri = URI.parse(base_api)
+            request = Net::HTTP::Put.new(uri.request_uri, 'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json')
+          end
+
+          request.body = JSON.generate(measurement_set)
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http_response = http.request(request)
+          begin
+            http_response_body = JSON.parse(http_response.body)
+          rescue JSON::ParserError
+            http_response_body = {'error' => {'type' => 'Response is not JSON', 'message' => http_response.body.to_s}}
+          end
+
+          if http_response.code == '200'
+            # api submission was good!
+          elsif http_response.code == '201'
+            # api submission good and created measurement set!
+            # TODO store this in database
+            submission_id = http_response_body['data']['measurementSet']['submissionId']
+            response.update_attribute(:submission_id, submission_id) if response.submission_id.nil?
+
+            measurement_set_id = http_response_body['data']['measurementSet']['id']
+            case category
+              when 'pi'
+                response.update_attribute(:aci_measurement_set_id, measurement_set_id) if response.aci_measurement_set_id.nil?
+              when 'quality'
+                response.update_attribute(:quality_measurement_set_id, measurement_set_id) if response.quality_measurement_set_id.nil?
+              when 'ia'
+                response.update_attribute(:cpia_measurement_set_id, measurement_set_id) if response.cpia_measurement_set_id.nil?
+            end
+          elsif http_response_body['error'] and http_response_body['error']['type'] == 'DuplicateEntryError'
+            # TODO entry exists so store submission id, get submission, save measurement_set_id for categories
+            submission_id = http_response_body['error']['details'][0]['submissionId']
+
+          elsif http_response_body['error']
+            error_type = http_response_body['error']['type']
+            response.response_errors.create(:error_type => "#{category}: #{error_type}",
+                                            :message => http_response_body['error']['message'])
+            if http_response_body['error']['details']
+              http_response_body['error']['details'].each do |error_detail|
+                if error_detail['message']
+                  response.response_errors.create(:error_type => "#{category}: #{error_type}", :message => error_detail['message'])
+                end
+              end
+            end
+
+            if error_type == 'DuplicateEntryError'
+              submission_id = http_response_body['error']['details'][0]['submissionId']
+              if response.submission_id.nil?
+                response.update_attribute(:submission_id, submission_id)
+              end
+              if response.submission_id == submission_id
+                measurement_set_ids = qpp_direct_get_measurement_set_ids_api_by_group_and_submission_id(attestation_clinic.group, response.submission_id)
+                measurement_set_ids.each do |key, measurement_set_id|
+                  case key
+                    when :aci_measurement_set_id
+                      response.update_attribute(:aci_measurement_set_id, measurement_set_id) if response.aci_measurement_set_id.nil?
+                    when :quality_measurement_set_id
+                      response.update_attribute(:quality_measurement_set_id, measurement_set_id) if response.quality_measurement_set_id.nil?
+                    when :cpia_measurement_set_id
+                      response.update_attribute(:cpia_measurement_set_id, measurement_set_id) if response.cpia_measurement_set_id.nil?
+                    when :other
+                      response.response_errors.create(:error_type => "#{category}: submission_id (#{response.submission_id})" \
+                                                               " has measurement sets with unknown categories (#{measurement_set_id})",
+                                                      :message => http_response_body['message'])
+                  end
+                end
+              else
+                response.response_errors.create(:error_type => "#{category}: C3 MACRA submission_id (#{response.submission_id})" \
+                                                               " doesn't match submission_id in QPP API (#{submission_id})",
+                                                :message => http_response_body['message'])
+              end
+            end
+          elsif http_response_body['error'] and http_response_body['message']
+            response.response_errors.create(:error_type => "#{category}: #{http_response_body['error']}",
+                                            :message => http_response_body['message'])
+          else
+            # not sure what the response is
+            response.response_errors.create(:error_type => "#{category}: Unknown response",
+                                            :message => http_response_body)
+          end
+
+
+          if http_response.code == '200' || http_response.code == '201'
+            submission_content = qpp_direct_get_submission_api_by_group_and_submission_id(attestation_clinic.group, response.submission_id)
+            score_content = qpp_direct_get_submission_score_api_by_group_and_submission_id(attestation_clinic.group, response.submission_id)
+            response.update_attribute(:content, submission_content.to_json)
+            response.update_attribute(:cms_score_content, score_content.to_json)
+            response.process_cms_score_content
+          end
+        end
+      end
+    else
+      # Empty object
+    end
+  end
+
+  def qpp_direct_get_submission_score_api_by_group_and_submission_id(group, submission_id)
+    base_api = ApplicationConfiguration.get_qpp_submission_api_endpoint
+    uri = URI.parse(base_api + "submissions/#{submission_id}/score")
+    token = group.qpp_api_token
+    request = Net::HTTP::Get.new(uri.request_uri, 'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json')
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http_response = http.request(request)
+
+    begin
+      http_response_body = JSON.parse(http_response.body)
+      # For now formatting it like how Suncoast gives it to us to make parsing the same.
+      suncoast_formatted_score = {'submissionId' => submission_id, 'score' => http_response_body}
+    rescue JSON::ParserError
+      suncoast_formatted_score = {'error' => {'type' => 'Response is not JSON', 'message' => http_response.body.to_s}}
+    end
+
+    suncoast_formatted_score
+  end
+
+  def qpp_direct_get_submission_api_by_group_and_submission_id(group, submission_id)
+    base_api = ApplicationConfiguration.get_qpp_submission_api_endpoint
+    uri = URI.parse(base_api + "submissions/#{submission_id}")
+    token = group.qpp_api_token
+    request = Net::HTTP::Get.new(uri.request_uri, 'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json')
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http_response = http.request(request)
+
+    begin
+      http_response_body = JSON.parse(http_response.body)
+    rescue JSON::ParserError
+      http_response_body = {'error' => {'type' => 'Response is not JSON', 'message' => http_response.body.to_s}}
+    end
+
+    http_response_body
+  end
+
+  def qpp_direct_get_measurement_set_ids_api_by_group_and_submission_id(group, submission_id)
+    measurement_set_ids = {}
+
+    http_response_body = qpp_direct_get_submission_api_by_group_and_submission_id(group, submission_id)
+
+    if http_response_body['data'] and http_response_body['data']['submission'] and http_response_body['data']['submission']['measurementSets']
+      http_response_body['data']['submission']['measurementSets'].each do |measurement_set|
+        case measurement_set['category']
+          when 'pi'
+            measurement_set_ids[:aci_measurement_set_id] = measurement_set['id']
+          when 'quality'
+            measurement_set_ids[:quality_measurement_set_id] = measurement_set['id']
+          when 'ia'
+            measurement_set_ids[:cpia_measurement_set_id] = measurement_set['id']
+          else
+            measurement_set_ids[:other] ||= []
+            measurement_set_ids[:other] << measurement_set['category']
+        end
+      end
+    end
+
+    measurement_set_ids
+  end
+
+  def suncoast_submit_api_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id)
+    body_set = qpp_submission_object_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id)
+    if body_set.size > 0
+      fiscal_year = AttestationRequirementFiscalYear.find_by_name(body_set[:performanceYear])
+      attestation_clinic = AttestationClinic.find(attestation_clinic_id)
+      if attestation_clinic.group_id == @selected_group_id and fiscal_year
+        Response.destroy_all(:attestation_clinic_id => attestation_clinic_id,
+                             :attestation_requirement_fiscal_year_id => fiscal_year.id)
+        response = Response.create(:attestation_clinic_id => attestation_clinic_id,
+                                   :tin => body_set[:taxpayerIdentificationNumber],
+                                   :npi => body_set[:nationalProviderIdentifier],
+                                   :attestation_requirement_fiscal_year_id => fiscal_year.id)
+
+        base_api = 'https://suncoastapi.herokuapp.com/apisc/processqpp'
+        uri = URI.parse(base_api)
+        token = ApplicationConfiguration.get_token
+        request = Net::HTTP::Post.new(uri.request_uri, 'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json')
+        request.body = JSON.generate(body_set)
+
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        http_response = http.request(request)
+        begin
+          http_response_body = JSON.parse(http_response.body)
+        rescue JSON::ParserError
+          http_response_body = {'error' => 'Response is not JSON', 'message' => http_response.body.to_s}
+        end
+
+        if http_response_body['response'] and http_response_body['response'] == 'OK'
+          # api submission was good!
+        elsif http_response_body['errors'] and http_response_body['errors'].size > 0
+          http_response_body['errors'].each do |error|
+            error_type = error['detail']['error']['type']
+
+            if error['detail']['error']['details'] and error['detail']['error']['details'].size > 0
+              error['detail']['error']['details'].each do |error_detail|
+                response.response_errors.create(:error_type => error_type, :message => error_detail['message'])
+              end
+            else
+              response.response_errors.create(:error_type => error_type, :message => error['detail']['error']['message'])
+            end
+          end
+        elsif http_response_body['error'] and http_response_body['message']
+          response.response_errors.create(:error_type => http_response_body['error'],
+                                          :message => http_response_body['message'])
+        else
+          # not sure what the response is
+        end
+      end
+    else
+      # Empty object
+    end
+  end
+
+  def qpp_submission_object_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id, forced_submission_method = nil)
+    body_set = {}
+    file_name = 'default_name'
+    # x_attestation_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic_id, event_id)
+    # if x_attestation_clinic_event and x_attestation_clinic_event.default_attestation_method and x_attestation_clinic_event.default_attestation_method.has_clinic_rollup?
+    xceam = XClinicEventAttestMethod.find_by_attestation_clinic_id_and_event_id_and_attestation_method_id(attestation_clinic_id, event_id, attestation_method_id)
+    if xceam and (xceam.submission_method or (!xceam.quality_submit_flag and xceam.override_submission_method))
+      entity_type = 'group'
+      if forced_submission_method.nil?
+        if xceam.quality_submit_flag
+          submission_method = xceam.submission_method.json_name_key
+        else
+          submission_method = (xceam.override_submission_method or xceam.submission_method).json_name_key
+        end
+      else
+        submission_method = forced_submission_method
+      end
+
+      body_set = {:entityType => entity_type,
+                  :taxpayerIdentificationNumber => xceam.attestation_clinic.TIN,
+                  :nationalProviderIdentifier => '',
+                  :performanceYear => xceam.event.attestation_requirement_fiscal_year.name.to_i}
+
+      measurement_sets = []
+
+      # ACI Measurement Set Section
+      aci_min_date = nil
+      aci_max_date = nil
+      if xceam.aci_submit_flag
+        aci_manual = (xceam.aci_use_manual_fields_flag ? 'manual_' : '')
+        aci_measurements = []
+        dep_reqs = XClinicEventAttestGroupRequirement.group_requirements_for_aci_submission_json_by_clinic_id_and_attestation_method_id_and_event_id(attestation_clinic_id, attestation_method_id, event_id, xceam.aci_use_manual_fields_flag)
+        dep_reqs.each do |req|
+          req_json = requirement_to_json(req)
+          unless req_json.nil?
+            aci_measurements << req_json
+            if (aci_min_date.nil? or aci_max_date.nil?) and (req.send("#{aci_manual}current_measure_start_date") and req.send("#{aci_manual}current_measure_end_date"))
+              aci_min_date = req.send("#{aci_manual}current_measure_start_date")
+              aci_max_date = req.send("#{aci_manual}current_measure_end_date")
+            end
+          end
+        end
+
+        xace = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic_id, event_id)
+        cehrt = (xace.nil? ? '' : xace.cehrt)
+        measurement_sets << {:category => 'pi',
+                             :submissionMethod => submission_method,
+                             :programName => 'mips', # mips, cpcPlus     mips is default if left blank
+                             # :practiceId => '', # REQUIRED IF :programName => 'cpcPlus'
+                             :performanceStart => aci_min_date.to_s,
+                             :performanceEnd => aci_max_date.to_s,
+                             # :measureSet => '', # optional, has lots of possible values
+                             :cehrtId => cehrt,
+                             :measurements => aci_measurements}
+      end
+
+      # Quality Measurement Set Section
+      if xceam.quality_submit_flag
+        quality_manual = (xceam.quality_use_manual_fields_flag ? 'manual_' : '')
+        quality_measurements = []
+        dep_reqs = XClinicEventAttestGroupRequirement.group_requirements_for_cqm_submission_json_by_clinic_id_and_attestation_method_id_and_event_id(attestation_clinic_id, attestation_method_id, event_id, xceam.quality_use_manual_fields_flag)
+        dep_reqs.each do |req|
+          req_json = requirement_to_json(req)
+          unless req_json.nil?
+            quality_measurements << req_json
+          end
+        end
+
+        measurement_sets << {:category => 'quality',
+                             :submissionMethod => submission_method,
+                             :programName => 'mips', # mips, cpcPlus     mips is default if left blank
+                             # :practiceId => '', # REQUIRED IF :programName => 'cpcPlus'
+                             :performanceStart => xceam.send("#{quality_manual}quality_submission_start_date").to_s,
+                             :performanceEnd => xceam.send("#{quality_manual}quality_submission_end_date").to_s,
+                             # :measureSet => '', # optional, has lots of possible values
+                             :measurements => quality_measurements}
+      end
+
+      # CPIA Measurement Set Section
+      if xceam.cpia_submit_flag
+        cpia_measurements = []
+        cpia_min_date = Date.new(xceam.event.attestation_requirement_fiscal_year.name.to_i)
+        cpia_max_date = cpia_min_date.end_of_year
+        xdcs_id = XDepartmentCriterionRequirement.xdcs_id_with_most_points_by_clinic_id_and_attestation_method_id_and_event_id(attestation_clinic_id, attestation_method_id, event_id)
+        if xdcs_id
+          xdcs = XDepartmentCriterionStatus.find(xdcs_id)
+          dep_reqs = XDepartmentCriterionRequirement.group_requirements_for_cpia_submission_json_by_department_id_and_event_id_and_attestation_clinic_id(xdcs.department_id, event_id, attestation_clinic_id)
+        else
+          dep_reqs = []
+        end
+        dep_reqs.each do |req|
+          req_json = requirement_to_json(req)
+          unless req_json.nil?
+            cpia_measurements << req_json
+            if (cpia_min_date.nil? or cpia_max_date.nil?) and req.current_measure_start_date and req.current_measure_end_date
+              cpia_min_date = req.current_measure_start_date
+              cpia_max_date = req.current_measure_end_date
+            end
+          end
+        end
+
+        measurement_sets << {:category => 'ia',
+                             :submissionMethod => submission_method,
+                             :programName => 'mips', # mips, cpcPlus     mips is default if left blank
+                             # :practiceId => '', # REQUIRED IF :programName => 'cpcPlus'
+                             :performanceStart => cpia_min_date.to_s,
+                             :performanceEnd => cpia_max_date.to_s,
+                             # :measureSet => '', # optional, has lots of possible values
+                             :measurements => cpia_measurements}
+      end
+
+      body_set[:measurementSets] = measurement_sets
+
+      # file_name = "#{x_attestation_clinic_event.attestation_clinic.name}_qpp_submission_group"
+    end
+    # end
+    # stream_json("#{file_name}.json", body_set)
+    return body_set
+  end
+
+  def download_zip_qpp_submission_departments(attestation_clinic_id, event_id, attestation_method_id)
+    # x_attestation_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic_id, event_id)
+    attestation_clinic = AttestationClinic.find(attestation_clinic_id)
+    event = Event.find(event_id)
+    x_year_attestation_method = XYearAttestationMethod.find_by_attestation_requirement_fiscal_year_id_and_attestation_method_id(event.attestation_requirement_fiscal_year_id, attestation_method_id)
+    selected_low_volume = -1
+    file_contents = []
+    departments = Department.Group_Departments_By_GroupID_ClinicID_EventID_XYearAttestationMethodID_UserDefinedFields_DepartmentOwnerID(attestation_clinic.group_id, attestation_clinic_id, event_id, x_year_attestation_method.id, ['-1'], -1, -1, selected_low_volume)
+
+    file_names = []
+    file_path_prefix = "qpp_submission_files/#{attestation_clinic.group_id}/#{attestation_clinic_id}/#{event_id}"
+    zip_name = "#{attestation_clinic.name}_qpp_submission_individual.zip"
+    zip_path_and_name = "#{file_path_prefix}/#{zip_name}"
+    FileUtils::mkdir_p(file_path_prefix)
+    File.delete(zip_path_and_name) if File.exist?(zip_path_and_name)
+    Zip::ZipFile.open(zip_path_and_name, Zip::ZipFile::CREATE) do |zip_file|
+      departments.each do |department|
+        departments_section = qpp_submission_object_department(department, attestation_clinic_id, event_id, SubmissionMethod.find(SubmissionMethod.ehr_id).json_name_key)
+        unless departments_section.nil?
+          # file_contents << departments_section
+          # file_name = "#{x_attestation_clinic_event.attestation_clinic.name}_qpp_submission_individual"
+
+          file_name = "#{department.name}_#{department.npi}.json"
+          file_path_and_name = "#{file_path_prefix}/#{department.name}_#{department.npi}.json"
+          temp_file = File.new(file_path_and_name, "w")
+          temp_file.puts(JSON.pretty_generate(departments_section))
+          # begin
+          #   temp_file.puts(JSON.generate(departments_section))
+          # rescue ArgumentError => e
+          #   temp_file.puts(departments_section.inspect)
+          # end
+          temp_file.close
+
+          zip_file.add(file_name, temp_file.path)
+
+          file_names << file_path_and_name
+        end
+      end
+    end
+    file_names.each do |f_name|
+      File.delete(f_name)
+    end
+
+    # stream_json("#{file_name}.json", file_contents)
+    send_file zip_path_and_name, :type => 'application/zip', :disposition => 'attachment', :filename => zip_name
+  end
+
+  def qpp_submission_object_department(department, attestation_clinic_id, event_id, forced_submission_method = nil)
+    body_set = nil
+    arsd = AttestationRequirementSetDetail.AttestationRequirementSetDetails_By_Department_EventID_AttestationClinicID(department, event_id, attestation_clinic_id)
+    x_attestation_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic_id, event_id)
+    if arsd and arsd.x_year_attestation_method and arsd.submission_method and arsd.x_year_attestation_method and x_attestation_clinic_event
+      entity_type = 'individual'
+      # TODO 03/14 For now just hard code EHR as the submission method
+      # submission_method = arsd.submission_method.json_name_key
+      ############## The below will be removed #######################
+      if forced_submission_method.nil?
+        submission_method = arsd.submission_method.json_name_key
+      else
+        submission_method = forced_submission_method
+      end
+      ############## TODO 03/14
+
+      # if x_attestation_clinic_event.quality_submit_flag
+      #   submission_method = arsd.submission_method.json_name_key
+      # else
+      #   submission_method = (arsd.override_submission_method or arsd.submission_method).json_name_key
+      # end
+
+      attestation_clinic = AttestationClinic.find(attestation_clinic_id)
+
+      body_set = {:entityType => entity_type,
+                  :taxpayerIdentificationNumber => attestation_clinic.TIN,
+                  :nationalProviderIdentifier => department.npi,
+                  :performanceYear => arsd.event.attestation_requirement_fiscal_year.name.to_i}
+
+      measurement_sets = []
+
+      # ACI Measurement Set Section
+      aci_min_date = nil
+      aci_max_date = nil
+      if x_attestation_clinic_event.aci_submit_flag
+        aci_measurements = []
+        dep_reqs = XDepartmentCriterionRequirement.group_requirements_for_aci_submission_json_by_department_id_and_event_id_and_attestation_clinic_id(department.id, arsd.event_id, attestation_clinic_id)
+        dep_reqs.each do |req|
+          req_json = requirement_to_json(req)
+          unless req_json.nil?
+            aci_measurements << req_json
+            if (aci_min_date.nil? or aci_max_date.nil?) and (req.current_measure_start_date and req.current_measure_end_date)
+              aci_min_date = req.current_measure_start_date
+              aci_max_date = req.current_measure_end_date
+            end
+          end
+        end
+
+        measurement_sets << {:category => 'pi',
+                             :submissionMethod => submission_method,
+                             :programName => 'mips', # mips, cpcPlus     mips is default if left blank
+                             # :practiceId => '', # REQUIRED IF :programName => 'cpcPlus'
+                             :performanceStart => aci_min_date.to_s,
+                             :performanceEnd => aci_max_date.to_s,
+                             # :measureSet => '', # optional, has lots of possible values
+                             :cehrtId => x_attestation_clinic_event.cehrt,
+                             :measurements => aci_measurements}
+      end
+
+      # Quality Measurement Set Section
+      if x_attestation_clinic_event.quality_submit_flag
+        quality_measurements = []
+        dep_reqs = XDepartmentCriterionRequirement.group_requirements_for_cqm_submission_json_by_department_id_and_event_id_and_attestation_clinic_id(department.id, arsd.event_id, attestation_clinic_id)
+        dep_reqs.each do |req|
+          req_json = requirement_to_json(req)
+          unless req_json.nil?
+            quality_measurements << req_json
+          end
+        end
+
+        measurement_sets << {:category => 'quality',
+                             :submissionMethod => submission_method,
+                             :programName => 'mips', # mips, cpcPlus     mips is default if left blank
+                             # :practiceId => '', # REQUIRED IF :programName => 'cpcPlus'
+                             :performanceStart => arsd.quality_submission_start_date.to_s,
+                             :performanceEnd => arsd.quality_submission_end_date.to_s,
+                             # :measureSet => '', # optional, has lots of possible values
+                             :measurements => quality_measurements}
+      end
+
+      # CPIA Measurement Set Section
+      if x_attestation_clinic_event.cpia_submit_flag
+        cpia_measurements = []
+        cpia_min_date = Date.new(arsd.event.attestation_requirement_fiscal_year.name.to_i)
+        cpia_max_date = cpia_min_date.end_of_year
+        dep_reqs = XDepartmentCriterionRequirement.group_requirements_for_cpia_submission_json_by_department_id_and_event_id_and_attestation_clinic_id(department.id, arsd.event_id, attestation_clinic_id)
+        dep_reqs.each do |req|
+          req_json = requirement_to_json(req)
+          unless req_json.nil?
+            cpia_measurements << req_json
+            if (cpia_min_date.nil? or cpia_max_date.nil?) and (req.current_measure_start_date and req.current_measure_end_date)
+              cpia_min_date = req.current_measure_start_date
+              cpia_max_date = req.current_measure_end_date
+            end
+          end
+        end
+
+        measurement_sets << {:category => 'ia',
+                             :submissionMethod => submission_method,
+                             :programName => 'mips', # mips, cpcPlus     mips is default if left blank
+                             # :practiceId => '', # REQUIRED IF :programName => 'cpcPlus'
+                             :performanceStart => cpia_min_date.to_s,
+                             :performanceEnd => cpia_max_date.to_s,
+                             # :measureSet => '', # optional, has lots of possible values
+                             :measurements => cpia_measurements}
+      end
+
+      body_set[:measurementSets] = measurement_sets
+
+      # file_name = "#{department.name}_qpp_submission"
+      # stream_json("#{file_name}.json", body_set)
+    end
+
+    return body_set
+  end
+
+  def qpp_submission_api_departments(attestation_clinic_id, event_id, attestation_method_id)
+    attestation_clinic = AttestationClinic.find(attestation_clinic_id)
+    event = Event.find(event_id)
+    attestation_method = AttestationMethod.find(attestation_method_id)
+    x_attestation_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic_id, event_id)
+    x_year_attestation_method = XYearAttestationMethod.find_by_attestation_requirement_fiscal_year_id_and_attestation_method_id(event.attestation_requirement_fiscal_year_id, attestation_method_id)
+    selected_low_volume = -1
+    departments = Department.Group_Departments_By_GroupID_ClinicID_EventID_XYearAttestationMethodID_UserDefinedFields_DepartmentOwnerID(attestation_clinic.group_id, attestation_clinic_id, event_id, x_year_attestation_method.id, ['-1'], -1, -1, selected_low_volume)
+
+    departments.each do |department|
+      arsd = AttestationRequirementSetDetail.AttestationRequirementSetDetails_By_Department_EventID_AttestationClinicID(department, event_id, attestation_clinic_id)
+      if arsd and arsd.submission_method_id == SubmissionMethod.registry_id
+        qpp_submission_api_department(department, attestation_clinic_id, event_id)
+      end
+    end
+  end
+
+  def qpp_submission_api_department(department, attestation_clinic_id, event_id)
+    if !department.group.qpp_api_token.blank?
+      qpp_direct_submit_api_department(department, attestation_clinic_id, event_id)
+    else
+      suncoast_submit_api_department(department, attestation_clinic_id, event_id)
+    end
+  end
+
+  def qpp_direct_submit_api_department(department, attestation_clinic_id, event_id)
+    body_set = qpp_submission_object_department(department, attestation_clinic_id, event_id)
+    if body_set.size > 0
+      fiscal_year = AttestationRequirementFiscalYear.find_by_name(body_set[:performanceYear])
+      if department.group_id == @selected_group_id and fiscal_year and body_set[:nationalProviderIdentifier]
+        # Response.destroy_all(:attestation_clinic_id => attestation_clinic_id,
+        #                      :npi => body_set[:nationalProviderIdentifier],
+        #                      :attestation_requirement_fiscal_year_id => fiscal_year.id)
+        response = Response.find_or_create_by(:attestation_clinic_id => attestation_clinic_id,
+                                              :tin => body_set[:taxpayerIdentificationNumber],
+                                              :npi => body_set[:nationalProviderIdentifier],
+                                              :attestation_requirement_fiscal_year_id => fiscal_year.id)
+        response.response_errors.delete_all
+
+        submission_fields = {:entityType => body_set[:entityType],
+                             :taxpayerIdentificationNumber => body_set[:taxpayerIdentificationNumber],
+                             :nationalProviderIdentifier => body_set[:nationalProviderIdentifier],
+                             :performanceYear => body_set[:performanceYear]}
+        body_set[:measurementSets].each do |measurement_set|
+          category = measurement_set[:category]
+
+          base_api = ApplicationConfiguration.get_qpp_submission_api_endpoint + 'measurement-sets'
+          # TODO
+          # if no measurement_set_id for category, add submission fields and do POST
+          measurement_set[:submission] = submission_fields
+          # else measurement_set_id for category exists, do PUT and append measurement_set_id to base_api
+          #   base_api += "/#{measurement_set_id_for_category}"
+          # end
+
+          uri = URI.parse(base_api)
+          token = department.group.qpp_api_token
+          request = Net::HTTP::Post.new(uri.request_uri, 'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json')
+          request.body = JSON.generate(body_set)
+
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http_response = http.request(request)
+          begin
+            http_response_body = JSON.parse(http_response.body)
+          rescue JSON::ParserError
+            http_response_body = {'error' => {'type' => 'Response is not JSON', 'message' => http_response.body.to_s}}
+          end
+
+          if http_response.code == '200'
+            # api submission was good!
+          elsif http_response.code == '201'
+            # api submission good and created measurement set!
+            # TODO store this in database
+            submission_id = http_response_body['data']['measurementSet']['submissionId']
+            measurement_set_id = http_response_body['data']['measurementSet']['id']
+          elsif http_response_body['error'] and http_response_body['error']['type'] == 'DuplicateEntryError'
+            # TODO entry exists so store submission id, get submission, save measurement_set_id for categories
+            submission_id = http_response_body['error']['details'][0]['submissionId']
+
+          elsif http_response_body['error']
+            error_type = http_response_body['error']['type']
+            response.response_errors.create(:error_type => "#{category}: #{error_type}",
+                                            :message => http_response_body['error']['message'])
+            if http_response_body['error']['details']
+              http_response_body['error']['details'].each do |error_detail|
+                if error_detail['message']
+                  response.response_errors.create(:error_type => "#{category}: #{error_type}", :message => error_detail['message'])
+                end
+              end
+            end
+          elsif http_response_body['error'] and http_response_body['message']
+            response.response_errors.create(:error_type => "#{category}: #{http_response_body['error']}",
+                                            :message => http_response_body['message'])
+          else
+            # not sure what the response is
+          end
+        end
+      end
+    else
+      # Empty object
+    end
+  end
+
+  def suncoast_submit_api_department(department, attestation_clinic_id, event_id)
+    body_set = qpp_submission_object_department(department, attestation_clinic_id, event_id)
+    if body_set.size > 0
+      fiscal_year = AttestationRequirementFiscalYear.find_by_name(body_set[:performanceYear])
+      if department.group_id == @selected_group_id and fiscal_year and body_set[:nationalProviderIdentifier]
+        Response.destroy_all(:attestation_clinic_id => attestation_clinic_id,
+                             :npi => body_set[:nationalProviderIdentifier],
+                             :attestation_requirement_fiscal_year_id => fiscal_year.id)
+        response = Response.create(:attestation_clinic_id => attestation_clinic_id,
+                                   :tin => body_set[:taxpayerIdentificationNumber],
+                                   :npi => body_set[:nationalProviderIdentifier],
+                                   :attestation_requirement_fiscal_year_id => fiscal_year.id)
+
+        base_api = 'https://suncoastapi.herokuapp.com/apisc/processqpp'
+        uri = URI.parse(base_api)
+        token = ApplicationConfiguration.get_token
+        request = Net::HTTP::Post.new(uri.request_uri, 'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json')
+        request.body = JSON.generate(body_set)
+
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        http_response = http.request(request)
+        begin
+          http_response_body = JSON.parse(http_response.body)
+        rescue JSON::ParserError
+          http_response_body = {'error' => 'Response is not JSON', 'message' => http_response.body.to_s}
+        end
+
+        if http_response_body['response'] and http_response_body['response'] == 'OK'
+          # api submission was good!
+        elsif http_response_body['errors'] and http_response_body['errors'].size > 0
+          http_response_body['errors'].each do |error|
+            error_type = error['detail']['error']['type']
+
+            if error['detail']['error']['details'] and error['detail']['error']['details'].size > 0
+              error['detail']['error']['details'].each do |error_detail|
+                response.response_errors.create(:error_type => error_type, :message => error_detail['message'])
+              end
+            else
+              response.response_errors.create(:error_type => error_type, :message => error['detail']['error']['message'])
+            end
+          end
+        elsif http_response_body['error'] and http_response_body['message']
+          response.response_errors.create(:error_type => http_response_body['error'],
+                                          :message => http_response_body['message'])
+        else
+          # not sure what the response is
+        end
+      end
+    else
+      # Empty object
+    end
+  end
+
+  def aci_measurement_set_json(department, attestation_clinic_id, event_id)
+    # build json obj for aci
+  end
+
+  def quality_measurement_set_json(department, attestation_clinic_id, event_id)
+    # build json obj for quality
+  end
+
+  def cpia_measurement_set_json(department, attestation_clinic_id, event_id)
+    # build json obj for cpia
+  end
+
+  def requirement_to_json(department_criterion_requirement)
+    requirement_json = nil
+    requirement = department_criterion_requirement.x_group_requirement.requirement
+    if requirement.metric_type
+      measure_id = requirement.requirement_identifier
+      req_id_prefix = measure_id.slice(0...measure_id.index('_').to_i)
+      if department_criterion_requirement.exclusion_flag == 1 and measure_id == "#{req_id_prefix}_TRANS_EP_1"
+        measure_id = "#{req_id_prefix}_TRANS_LVPP_1"
+        value = true
+      elsif department_criterion_requirement.exclusion_flag == 1 and measure_id == "#{req_id_prefix}_TRANS_HIE_1"
+        measure_id = "#{req_id_prefix}_TRANS_LVOTC_1"
+        value = true
+      elsif department_criterion_requirement.exclusion_flag == 1 and measure_id == "#{req_id_prefix}_EP_1"
+        measure_id = "#{req_id_prefix}_LVPP_1"
+        value = true
+      elsif department_criterion_requirement.exclusion_flag == 1 and measure_id == "#{req_id_prefix}_HIE_1"
+        measure_id = "#{req_id_prefix}_LVOTC_1"
+        value = true
+      elsif department_criterion_requirement.exclusion_flag == 1 and measure_id == "#{req_id_prefix}_HIE_2"
+        measure_id = "#{req_id_prefix}_LVITC_1"
+        value = true
+      elsif department_criterion_requirement.exclusion_flag == 1 and measure_id == "#{req_id_prefix}_HIE_4"
+        measure_id = "#{req_id_prefix}_LVITC_2"
+        value = true
+        # The commented lines below would replace the above if's
+        # if department_criterion_requirement.exclusion_flag == 1 and ['_TRANS_EP_1', '_TRANS_HIE_1', '_EP_1', '_HIE_1', '_HIE_2'].include?(measure_id.slice(measure_id.index('_')..-1))
+        #   measure_id = requirement.exclusion_number
+        #   value = true
+      elsif department_criterion_requirement.exclusion_flag == 1 and %w[_PHCDRR_1 _PHCDRR_2 _PHCDRR_3 _PHCDRR_4 _PHCDRR_5].include?(measure_id.slice(measure_id.index('_')..-1))
+        measure_id = requirement.exclusion_number
+        value = true
+      elsif department_criterion_requirement.exclusion2_flag == 1 and %w[_PHCDRR_1 _PHCDRR_2 _PHCDRR_3 _PHCDRR_4 _PHCDRR_5].include?(measure_id.slice(measure_id.index('_')..-1))
+        measure_id = requirement.exclusion2_number
+        value = true
+      elsif department_criterion_requirement.exclusion3_flag == 1 and %w[_PHCDRR_1 _PHCDRR_2 _PHCDRR_3 _PHCDRR_4 _PHCDRR_5].include?(measure_id.slice(measure_id.index('_')..-1))
+        measure_id = requirement.exclusion3_number
+        value = true
+      else
+        value = requirement_value_to_json(department_criterion_requirement, requirement)
+      end
+      unless value.nil?
+        requirement_json = {:measureId => measure_id,
+                            :value => value}
+      end
+    end
+    requirement_json
+  end
+
+  def requirement_value_to_json(department_criterion_requirement, requirement)
+    case requirement.metric_type_id
+      when 1 # Boolean
+        value = (requirement.criterion_id == 5 ? (department_criterion_requirement.cpia_select_flag) : (department_criterion_requirement.numerator == 1))
+        value
+      when 2 # Proportion
+        {:numerator => department_criterion_requirement.numerator,
+         :denominator => department_criterion_requirement.denominator}
+      when 3 # Non-Proportion
+        value = {:numerator => department_criterion_requirement.numerator,
+                 :denominator => department_criterion_requirement.denominator,
+                 :isEndToEndReported => department_criterion_requirement.end_to_end_cehrt_flag.nil? ? false : department_criterion_requirement.end_to_end_cehrt_flag,
+                 :observationInstances => department_criterion_requirement.denominator}
+        value[:numeratorExclusion] = department_criterion_requirement.numerator_exclusion unless department_criterion_requirement.numerator_exclusion.nil?
+        value[:denominatorException] = department_criterion_requirement.denominator_exception unless department_criterion_requirement.denominator_exception.nil?
+        value
+      when 4 # Single-Performance Rate
+        if department_criterion_requirement.performance_met.nil? and department_criterion_requirement.performance_not_met.nil? and department_criterion_requirement.eligible_population.nil?
+          value = {:isEndToEndReported => department_criterion_requirement.end_to_end_cehrt_flag.nil? ? false : department_criterion_requirement.end_to_end_cehrt_flag,
+                   :performanceMet => department_criterion_requirement.numerator,
+                   :performanceNotMet => (department_criterion_requirement.denominator.to_i - department_criterion_requirement.numerator.to_i),
+                   :eligiblePopulation => department_criterion_requirement.denominator}
+        else
+          value = {:isEndToEndReported => department_criterion_requirement.end_to_end_cehrt_flag.nil? ? false : department_criterion_requirement.end_to_end_cehrt_flag,
+                   :performanceMet => department_criterion_requirement.performance_met,
+                   :performanceNotMet => department_criterion_requirement.performance_not_met,
+                   :eligiblePopulation => department_criterion_requirement.eligible_population}
+          value[:eligible_population_exclusion] = department_criterion_requirement.eligible_population_exclusion unless department_criterion_requirement.eligible_population_exclusion.nil?
+          value[:eligible_population_exception] = department_criterion_requirement.eligible_population_exception unless department_criterion_requirement.eligible_population_exception.nil?
+        end
+        value
+      when 5 # Multi-Performance Rate
+        strata = []
+        department_criterion_requirement.child_requirements_for_submission_json.each do |stratum_req|
+          if stratum_req.performance_met.nil? and stratum_req.performance_not_met.nil? and stratum_req.eligible_population.nil?
+            stratum_value = {:stratum => stratum_req.stratum_name,
+                             :performanceMet => stratum_req.numerator,
+                             :performanceNotMet => (stratum_req.denominator.to_i - stratum_req.numerator.to_i),
+                             :eligiblePopulation => stratum_req.denominator}
+          else
+            stratum_value = {:stratum => stratum_req.stratum_name,
+                             :performanceMet => stratum_req.performance_met,
+                             :performanceNotMet => stratum_req.performance_not_met,
+                             :eligiblePopulation => stratum_req.eligible_population}
+            stratum_value[:eligible_population_exclusion] = stratum_req.eligible_population_exclusion unless stratum_req.eligible_population_exclusion.nil?
+            stratum_value[:eligible_population_exception] = stratum_req.eligible_population_exception unless stratum_req.eligible_population_exception.nil?
+          end
+          strata << stratum_value
+        end
+        {:isEndToEndReported => department_criterion_requirement.end_to_end_cehrt_flag.nil? ? false : department_criterion_requirement.end_to_end_cehrt_flag,
+         :strata => strata}
+      when 6 # Registry Single-Performance Rate
+        if department_criterion_requirement.performance_met.nil? and department_criterion_requirement.performance_not_met.nil? and department_criterion_requirement.eligible_population.nil?
+          value = {:isEndToEndReported => department_criterion_requirement.end_to_end_cehrt_flag.nil? ? false : department_criterion_requirement.end_to_end_cehrt_flag,
+                   :performanceMet => department_criterion_requirement.numerator,
+                   :performanceNotMet => (department_criterion_requirement.denominator.to_i - department_criterion_requirement.numerator.to_i),
+                   :eligiblePopulation => department_criterion_requirement.denominator,
+                   :performanceRate => department_criterion_requirement.performance_rate}
+        else
+          value = {:isEndToEndReported => department_criterion_requirement.end_to_end_cehrt_flag.nil? ? false : department_criterion_requirement.end_to_end_cehrt_flag,
+                   :performanceMet => department_criterion_requirement.performance_met,
+                   :performanceNotMet => department_criterion_requirement.performance_not_met,
+                   :eligiblePopulation => department_criterion_requirement.eligible_population,
+                   :performanceRate => department_criterion_requirement.performance_rate}
+          value[:eligible_population_exclusion] = department_criterion_requirement.eligible_population_exclusion unless department_criterion_requirement.eligible_population_exclusion.nil?
+          value[:eligible_population_exception] = department_criterion_requirement.eligible_population_exception unless department_criterion_requirement.eligible_population_exception.nil?
+        end
+        value
+      when 7 # Registry Multi-Performance Rate
+        strata = []
+        department_criterion_requirement.child_requirements_for_submission_json.each do |stratum_req|
+          if stratum_req.performance_met.nil? and stratum_req.performance_not_met.nil? and stratum_req.eligible_population.nil?
+            stratum_value = {:stratum => stratum_req.stratum_name,
+                             :performanceMet => stratum_req.numerator,
+                             :performanceNotMet => (stratum_req.denominator.to_i - stratum_req.numerator.to_i),
+                             :eligiblePopulation => stratum_req.denominator}
+          else
+            stratum_value = {:stratum => stratum_req.stratum_name,
+                             :performanceMet => stratum_req.performance_met,
+                             :performanceNotMet => stratum_req.performance_not_met,
+                             :eligiblePopulation => stratum_req.eligible_population}
+            stratum_value[:eligible_population_exclusion] = stratum_req.eligible_population_exclusion unless stratum_req.eligible_population_exclusion.nil?
+            stratum_value[:eligible_population_exception] = stratum_req.eligible_population_exception unless stratum_req.eligible_population_exception.nil?
+          end
+          strata << stratum_value
+        end
+        {:isEndToEndReported => department_criterion_requirement.end_to_end_cehrt_flag.nil? ? false : department_criterion_requirement.end_to_end_cehrt_flag,
+         :performanceRate => department_criterion_requirement.performance_rate,
+         :strata => strata}
+      else
+        nil
+    end
+  end
+
+  def stream_json(filename, file_content)
+    if request.env['HTTP_USER_AGENT'] =~ /msie/i
+      headers['Pragma'] = 'public'
+      headers["Content-type"] = "text/plain"
+      headers['Cache-Control'] = 'no-cache, must-revalidate, post-check=0, pre-check=0'
+      headers['Content-Disposition'] = "attachment; filename=\"#{filename}\""
+      headers['Expires'] = "0"
+    else
+      headers["Content-Type"] ||= 'application/json'
+      headers["Content-Disposition"] = "attachment; filename=\"#{filename}\""
+    end
+
+    render(:text => JSON.pretty_generate(file_content))
+    # begin
+    #   render(:text => JSON.generate(file_content))
+    # rescue ArgumentError => e
+    #   render(:text => file_content.inspect)
+    # end
+  end
+
   def determine_fiscal_year_based_on_current_date(group_type)
     current_time = Time.zone.now
     temp_fiscal_year = current_time.year

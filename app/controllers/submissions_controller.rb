@@ -45,6 +45,95 @@ class SubmissionsController < ApplicationController
     define_submission_subnav
   end
 
+  def download_submission_file
+    attestation_clinic_id = params[:ac_id].to_i
+    event_id = params[:e_id].to_i
+    attestation_method_id = params[:am_id].to_i
+    if attestation_clinic_id > 0 and event_id > 0 and attestation_method_id > 0
+      attestation_method = AttestationMethod.find(attestation_method_id)
+      if attestation_method.has_clinic_rollup?
+        attestation_clinic = AttestationClinic.find(attestation_clinic_id)
+        file_name = "#{attestation_clinic.name}_qpp_submission_group"
+        body_set = qpp_submission_object_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id, SubmissionMethod.find(SubmissionMethod.ehr_id).json_name_key)
+
+        stream_json("#{file_name}.json", body_set)
+      else
+        download_zip_qpp_submission_departments(attestation_clinic_id, event_id, attestation_method_id)
+      end
+    end
+  end
+
+  def api_submit_submission_file
+    attestation_clinic_id = params[:ac_id].to_i
+    event_id = params[:e_id].to_i
+    attestation_method_id = params[:am_id].to_i
+    # x_attestation_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic_id, event_id)
+    if attestation_clinic_id > 0 and event_id > 0 and attestation_method_id > 0
+      attestation_method = AttestationMethod.find(attestation_method_id)
+      if attestation_method.has_clinic_rollup?
+        qpp_submission_api_attestation_clinic(attestation_clinic_id, event_id, attestation_method_id)
+      else
+        # qpp_submission_api_departments(attestation_clinic_id, event_id, attestation_method_id)
+      end
+    end
+
+    flash[:notice] = '<span class="yes">Submitted to API</span>'
+    redirect_to :action => :index
+  end
+
+  def api_response_attestation_clinic_file_download
+    attestation_clinic_id = params[:ac_id].to_i
+    event_id = params[:e_id].to_i
+    x_attestation_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic_id, event_id)
+    if x_attestation_clinic_event.default_attestation_method and x_attestation_clinic_event.default_attestation_method.has_clinic_rollup?
+      response = Response.find_by_attestation_clinic_id_and_attestation_requirement_fiscal_year_id(attestation_clinic_id, x_attestation_clinic_event.event.attestation_requirement_fiscal_year_id)
+      body_set = JSON.parse(response.content.to_s)
+
+      file_name = "#{x_attestation_clinic_event.attestation_clinic.name}_qpp_submission_group"
+      stream_json("#{file_name}.json", body_set)
+    end
+  end
+
+  def api_response_errors_download_csv_file
+    attestation_clinic_id = params[:ac_id].to_i
+    event_id = params[:e_id].to_i
+    x_attestation_clinic_event = XAttestationClinicEvent.find_by_attestation_clinic_id_and_event_id(attestation_clinic_id, event_id)
+    if x_attestation_clinic_event.default_attestation_method and x_attestation_clinic_event.default_attestation_method.has_clinic_rollup?
+      api_response_attestation_clinic_errors_download_csv_file(attestation_clinic_id, x_attestation_clinic_event.event.attestation_requirement_fiscal_year_id)
+    elsif x_attestation_clinic_event.default_attestation_method
+      # individual
+    end
+  end
+
+  def api_response_attestation_clinic_errors_download_csv_file(attestation_clinic_id, attestation_requirement_fiscal_year_id)
+    response = Response.find_by_attestation_clinic_id_and_attestation_requirement_fiscal_year_id(attestation_clinic_id, attestation_requirement_fiscal_year_id)
+    if response and response.attestation_clinic.group_id == @selected_group_id
+      response.response_errors
+      base_file_name = response.attestation_clinic.name
+      stream_csv("#{base_file_name}_api_submission_errors_#{@current_time.to_s}.csv") do |csv|
+        # Title of report
+        csv << "Title of Report: #{response.attestation_clinic.name} - api_submission_errors"
+        csv << "Organization Name: #{response.attestation_clinic.group.name}"
+        csv << ' '
+
+        # header information
+        header = []
+        header << 'Type'
+        header << 'Error Message'
+        csv << header
+
+        # detail information
+        response.response_errors.each do |error|
+          display_results = []
+          display_results << error.error_type.to_s
+          display_results << error.message.to_s
+
+          csv << display_results
+        end
+      end
+    end
+  end
+
   private
 
   def define_submission_subnav

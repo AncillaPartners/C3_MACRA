@@ -2,6 +2,7 @@ class Event < ApplicationRecord
   belongs_to  :attestation_requirement_stage
   belongs_to  :attestation_requirement_fiscal_year
   belongs_to  :attestation_requirement_type
+
   def self.event_fiscal_year_by_group_type_id_and_fiscal_year_and_attestation_requirement_type_id(group_type_id, fiscal_year, attestation_requirement_type_id=0)
     join_text = " as x1 inner join attestation_requirement_fiscal_years as x2 on x1.attestation_requirement_fiscal_year_id = x2.id"
     sort_order = "x1.attestation_requirement_stage_id DESC"

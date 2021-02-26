@@ -200,7 +200,7 @@
                                       <%#= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => xceam.attestation_clinic_id, :e_id => xceam.event_id, :am_id => xceam.attestation_method_id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %>
                                       <!--API Submit-->
 
-                                      <span class="show_field"><%= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => xceam.attestation_clinic_id, :e_id => xceam.event_id, :am_id => xceam.attestation_method_id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %></span>
+                                      <span class="show_field"><%= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => xceam.attestation_clinic_id, :e_id => xceam.event_id, :am_id => xceam.attestation_method_id}, data: {method: :post, :confirm => 'Are you sure you want to submit to CMS?'}) %></span>
                                       <span class="edit_field" style="display: none;">API Submit</span>
                                   <% end %>
                                 </td>

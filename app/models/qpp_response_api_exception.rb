@@ -1,0 +1,2 @@
+class QppResponseApiException < ApplicationRecord
+end

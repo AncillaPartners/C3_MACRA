@@ -1,4 +1,5 @@
 class AttestationClinic < ApplicationRecord
+  belongs_to :group
 
   STATUSES = {:INCLUDE => 1, :EXCLUDE => 0, :NOT_VERIFIED => 2}
   STATUS_NAMES = {1 => 'Include', 0 => 'Exclude', 2 => 'Not Verified'}
