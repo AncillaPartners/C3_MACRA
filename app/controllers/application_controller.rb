@@ -990,7 +990,15 @@ class ApplicationController < ActionController::Base
 
           if http_response.code == '200' || http_response.code == '201'
             submission_content = qpp_direct_get_submission_api_by_group_and_submission_id(attestation_clinic.group, response.submission_id)
+            if submission_content['error']
+              response.response_errors.create(:error_type => "QPP Get Submission Content: #{submission_content['error']['type']}",
+                                              :message => submission_content['error']['message'])
+            end
             score_content = qpp_direct_get_submission_score_api_by_group_and_submission_id(attestation_clinic.group, response.submission_id)
+            if score_content['error']
+              response.response_errors.create(:error_type => "QPP Get Score Preview: #{score_content['error']['type']}",
+                                              :message => score_content['error']['message'])
+            end
             response.update_attribute(:content, submission_content.to_json)
             response.update_attribute(:cms_score_content, score_content.to_json)
             response.process_cms_score_content
