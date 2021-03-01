@@ -198,7 +198,7 @@
                             </td>
                             <% if @user.is_business_partner? %>
                                 <td title="API Submission">
-                                  <% if is_valid_to_submit and ((quality_submit and xceam.submission_method_id == SubmissionMethod.registry_id) or (!quality_submit and ((xceam.override_submission_method_id == nil and xceam.submission_method_id == SubmissionMethod.registry_id) or (xceam.override_submission_method_id == SubmissionMethod.registry_id)))) %>
+                                  <% if attestation_clinic.group.qpp_api_token and is_valid_to_submit and ((quality_submit and xceam.submission_method_id == SubmissionMethod.registry_id) or (!quality_submit and ((xceam.override_submission_method_id == nil and xceam.submission_method_id == SubmissionMethod.registry_id) or (xceam.override_submission_method_id == SubmissionMethod.registry_id)))) %>
                                       <%#= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => xceam.attestation_clinic_id, :e_id => xceam.event_id, :am_id => xceam.attestation_method_id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %>
                                       <!--API Submit-->
 
@@ -240,7 +240,7 @@
                         </td>
                         <% if @user.is_business_partner? %>
                             <td title="API Submission">
-                              <% if is_valid_to_submit %>
+                              <% if attestation_clinic.group.qpp_api_token and is_valid_to_submit %>
                                   <%= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id, :am_id => attestation_method.id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %>
                                   <!--API Submit-->
                               <% end %>
