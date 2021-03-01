@@ -139,6 +139,8 @@
 
                      is_valid_to_submit = false if (is_valid_to_submit and (cpia_submit and (x_clinic_event.nil? or x_clinic_event.attestation_clinic_cpia_documentation_files.size == 0)))
 
+                     is_valid_to_submit = false if (is_valid_to_submit and (x_clinic_event.nil? or x_clinic_event.attestation_clinic_submit_permission_files.size == 0))
+
                      is_valid_to_submit = false if (is_valid_to_submit and (x_clinic_event.nil? or x_clinic_event.default_attestation_method.nil?))
                   %>
                   <% if attestation_clinic_method.xceam_id and attestation_method.has_clinic_rollup? %>
