@@ -75,7 +75,7 @@
               <% if x_clinic_event and x_clinic_event.default_attestation_method %>
                   <%
                      attestation_method = AttestationMethod.find(attestation_clinic_method.am_id)
-                     is_valid_to_submit = false if (is_valid_to_submit and attestation_method.id != x_clinic_event.default_attestation_method_id)
+                     # is_valid_to_submit = false if (is_valid_to_submit and attestation_method.id != x_clinic_event.default_attestation_method_id)
 
                      is_valid_to_submit = false if (is_valid_to_submit and attestation_clinic.assigned_ec_count.to_i != attestation_clinic.ah_ec_count.to_i)
 
