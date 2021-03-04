@@ -433,7 +433,7 @@ a.button {
 }
 
 a:hover.button {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404, white);
     background: -moz-linear-gradient(#04B404, white);
     background: linear-gradient(#04B404, white);
@@ -724,7 +724,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
     color: #003300;
 }
 .subnav ul li a:hover {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404, white);
     background: -moz-linear-gradient(#04B404, white);
     background: linear-gradient(#04B404, white);
@@ -762,7 +762,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
     background-color: #e3e3e3; text-align: right; margin: 0 1em; padding: .5em;
 }
 .home_subnav ul li a:hover {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404 50%, white);
     background: -moz-linear-gradient(#04B404 50%, white);
     background: linear-gradient(#04B404 50%, white);
@@ -824,7 +824,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
     color: #003300;
 }
 .mips_home_button ul li a:hover {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404 50%, white);
     background: -moz-linear-gradient(#04B404 50%, white);
     background: linear-gradient(#04B404 50%, white);
@@ -857,7 +857,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
     color: #003300;
 }
 .mum_program_toggle_button a:hover {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404 50%, white);
     background: -moz-linear-gradient(#04B404 50%, white);
     background: linear-gradient(#04B404 50%, white);
@@ -888,7 +888,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
 }
 .green_button:hover {
     cursor: pointer;
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404 50%, white);
     background: -moz-linear-gradient(#04B404 50%, white);
     background: linear-gradient(#04B404 50%, white);
@@ -919,7 +919,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
 }
 .gray_button:hover {
     cursor: pointer;
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(gray 50%, white);
     background: -moz-linear-gradient(gray 50%, white);
     background: linear-gradient(gray 50%, white);
@@ -950,7 +950,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
 }
 .yellow_button:hover {
     cursor: pointer;
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#C8C800 50%, white) !important;
     background: -moz-linear-gradient(#C8C800 50%, white) !important;
     background: linear-gradient(#C8C800 50%, white) !important;
@@ -987,7 +987,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
     outline: none;
 }
 .what_if_convert_button input[type="submit"]:hover {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404 50%, white);
     background: -moz-linear-gradient(#04B404 50%, white);
     background: linear-gradient(#04B404 50%, white);
@@ -1021,7 +1021,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
      color: #003300;
  }
 .refresh_button li a:hover {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404 50%, white);
     background: -moz-linear-gradient(#04B404 50%, white);
     background: linear-gradient(#04B404 50%, white);
@@ -1053,7 +1053,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
      color: #003300;
  }
 .pdf_button li a:hover {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404 50%, white);
     background: -moz-linear-gradient(#04B404 50%, white);
     background: linear-gradient(#04B404 50%, white);
@@ -1079,7 +1079,7 @@ div.technology_notes_overflow_text {border: 0 solid #e3e3e3; padding: 0 .4em .4e
     outline: none;
 }
 .mips_button:hover {
-    #background-color: #e3e3e3;
+    background-color: #e3e3e3;
     background: -webkit-linear-gradient(#04B404 50%, white);
     background: -moz-linear-gradient(#04B404 50%, white);
     background: linear-gradient(#04B404 50%, white);
