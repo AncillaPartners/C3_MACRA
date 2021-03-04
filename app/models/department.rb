@@ -224,4 +224,72 @@ class Department < ApplicationRecord
         .group('arsd.id')
         .select(selecting)
   end
+
+  def self.count_departments_with_no_assigned_aci_requirements_by_group_id_and_attestation_clinic_id_and_event_id(group_id, attestation_clinic_id, event_id)
+    conditions = {}
+    join_text = 'd'
+    join_text += ' inner join x_department_attestation_requirement_set_details xdarsd on xdarsd.department_id = d.id'
+    join_text += ' inner join attestation_requirement_set_details arsd on arsd.id = xdarsd.attestation_requirement_set_detail_id'
+    join_text += ' left outer join x_department_criterion_statuses xdcs on xdcs.department_id = d.id and xdcs.attestation_clinic_id = xdarsd.attestation_clinic_id and xdcs.event_id = arsd.event_id'
+    join_text += ' left outer join x_department_criterion_requirements xdcr on xdcr.x_department_criterion_status_id = xdcs.id and xdcr.active = 1'
+    join_text += ' left outer join x_group_requirements xgr on xgr.id = xdcr.x_group_requirement_id'
+    join_text += ' left outer join requirements r on r.id = xgr.requirement_id and r.aci_scoring_type_id is not null'
+
+    active = 1
+
+    # department active is 1 = yes
+    selectstr = 'd.active = :d_active'
+    conditions[:d_active] = active
+
+    # group id
+    selectstr += ' and d.group_id = :d_group_id'
+    conditions[:d_group_id] = group_id
+
+    # attestation clinic id
+    selectstr += ' and xdarsd.attestation_clinic_id = :xdarsd_attestation_clinic_id'
+    conditions[:xdarsd_attestation_clinic_id] = attestation_clinic_id
+
+    # event id
+    selectstr += ' and arsd.event_id = :arsd_event_id'
+    conditions[:arsd_event_id] = event_id
+
+    self.where([selectstr,conditions])
+        .joins(join_text)
+        .group('xdarsd.id having active_req_count = 0')
+        .select('d.*, count(distinct(xdcr.id)) as active_req_count')
+        .size
+  end
+
+  def self.count_departments_with_no_assigned_requirements_by_group_id_and_attestation_clinic_id_and_event_id_and_criterion_id(group_id, attestation_clinic_id, event_id, criterion_id)
+    conditions = {}
+    join_text = 'd'
+    join_text += ' inner join x_department_attestation_requirement_set_details xdarsd on xdarsd.department_id = d.id'
+    join_text += ' inner join attestation_requirement_set_details arsd on arsd.id = xdarsd.attestation_requirement_set_detail_id'
+    join_text += " left outer join x_department_criterion_statuses xdcs on xdcs.department_id = d.id and xdcs.attestation_clinic_id = xdarsd.attestation_clinic_id and xdcs.event_id = arsd.event_id and xdcs.criterion_id = #{criterion_id}"
+    join_text += ' left outer join x_department_criterion_requirements xdcr on xdcr.x_department_criterion_status_id = xdcs.id and xdcr.active = 1'
+
+    active = 1
+
+    # department active is 1 = yes
+    selectstr = 'd.active = :d_active'
+    conditions[:d_active] = active
+
+    # group id
+    selectstr += ' and d.group_id = :d_group_id'
+    conditions[:d_group_id] = group_id
+
+    # attestation clinic id
+    selectstr += ' and xdarsd.attestation_clinic_id = :xdarsd_attestation_clinic_id'
+    conditions[:xdarsd_attestation_clinic_id] = attestation_clinic_id
+
+    # event id
+    selectstr += ' and arsd.event_id = :arsd_event_id'
+    conditions[:arsd_event_id] = event_id
+
+    self.where([selectstr,conditions])
+        .joins(join_text)
+        .group('xdarsd.id having active_req_count = 0')
+        .select('d.*, count(distinct(xdcr.id)) as active_req_count')
+        .size
+  end
 end
