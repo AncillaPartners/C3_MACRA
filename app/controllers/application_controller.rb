@@ -594,9 +594,8 @@ class ApplicationController < ActionController::Base
         #@main_image = "/images/logos/ICD10PortalLogo.png"
         @main_image = "/images/logos/CustomerConciergeMonitorLogo.png"
       end
-      #@logo_image = "/images/logos/"+((@selected_group.business_partner.nil?) ? "MUMLogoColorShort.gif" : @selected_group.business_partner.logo_image || "MUMLogoColorShort.gif")
-
-      @logo_image = ((!@selected_group.business_partner.nil? and !@selected_group.business_partner.logo.nil?) ? @selected_group.business_partner.logo.public_filename : '')
+      # @logo_image = ((!@selected_group.business_partner.nil? and !@selected_group.business_partner.logo.nil?) ? @selected_group.business_partner.logo.public_filename : '')
+      @logo_image = ''
 
       #rescue ActiveRecord::RecordNotFound
       #  flash[:notice] = "Logged in user not found"
@@ -795,8 +794,8 @@ class ApplicationController < ActionController::Base
           #@main_image = "/images/logos/ICD10PortalLogo.png"
           @main_image = "/images/logos/CustomerConciergeMonitorLogo.png"
         end
-        #@logo_image = "/images/logos/"+((@selected_group.business_partner.nil?) ? "MUMLogoColorShort.gif" : @selected_group.business_partner.logo_image || "MUMLogoColorShort.gif")
-        @logo_image = ((!@selected_group.business_partner.nil? and !@selected_group.business_partner.logo.nil?) ? @selected_group.business_partner.logo.public_filename : '')
+        # @logo_image = ((!@selected_group.business_partner.nil? and !@selected_group.business_partner.logo.nil?) ? @selected_group.business_partner.logo.public_filename : '')
+        @logo_image = ''
 
         if @user.security_level_id == 2
           accepted_controllers = ["group", "attestation_clinic", "clinic", "pecos_clinic", "user", "department", "group_user_defined_value", "mass_maintenance", "group_actual_payment", "group_attestation_requirement_template"]
