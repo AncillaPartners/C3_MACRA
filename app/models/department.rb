@@ -255,7 +255,8 @@ class Department < ApplicationRecord
 
     self.where([selectstr,conditions])
         .joins(join_text)
-        .group('xdarsd.id having active_req_count = 0')
+        .group('xdarsd.id')
+        .having('active_req_count = 0')
         .select('d.*, count(distinct(xdcr.id)) as active_req_count')
         .size
   end
@@ -288,7 +289,8 @@ class Department < ApplicationRecord
 
     self.where([selectstr,conditions])
         .joins(join_text)
-        .group('xdarsd.id having active_req_count = 0')
+        .group('xdarsd.id')
+        .having('active_req_count = 0')
         .select('d.*, count(distinct(xdcr.id)) as active_req_count')
         .size
   end
