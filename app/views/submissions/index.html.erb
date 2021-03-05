@@ -229,31 +229,30 @@
                         <td title="Resource"><%= check_box_tag(:resource_submit_flag, 1, x_clinic_event.resource_submit_flag, {:disabled => true}) %></td>
                         <td title="Submission File">
                           <% if is_valid_to_submit %>
-                              <%= link_to('Download', :action => 'download_submission_file', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id, :am_id => attestation_method.id) %>
+                              <%#= link_to('Download', :action => 'download_submission_file', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id, :am_id => attestation_method.id) %>
                           <% end %>
                         </td>
-                        <td title="Response File"><%= link_to 'Upload File', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %></td>
+                        <td title="Response File"><%#= link_to 'Upload File', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %></td>
                         <td title="Status">
-                          <span class="show_field"><%= x_clinic_event.submission_status ? x_clinic_event.submission_status.name : '' %></span>
-                          <span class="edit_field" style="display: none;"><%= select_tag("ac_submission_status_id[#{x_clinic_event.id}]", options_for_select([['', nil]] + @select_submission_statuses, x_clinic_event.submission_status_id), {:disabled => true}) %></span>
-                          <%#= select_tag("ac_submission_status_id[#{x_clinic_event.id}]", options_for_select([['', nil]] + @select_submission_statuses, x_clinic_event.submission_status_id)) %>
+                          <span class="show_field"><%#= x_clinic_event.submission_status ? x_clinic_event.submission_status.name : '' %></span>
+                          <span class="edit_field" style="display: none;"><%#= select_tag("ac_submission_status_id[#{x_clinic_event.id}]", options_for_select([['', nil]] + @select_submission_statuses, x_clinic_event.submission_status_id), {:disabled => true}) %></span>
                         </td>
                         <% if @user.is_business_partner? %>
                             <td title="API Submission">
                               <% if attestation_clinic.group.qpp_api_token and is_valid_to_submit %>
-                                  <%= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id, :am_id => attestation_method.id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %>
+                                  <%#= link_to('API Submit', {:action => 'api_submit_submission_file', :ac_id => x_clinic_event.attestation_clinic_id, :e_id => x_clinic_event.event_id, :am_id => attestation_method.id}, {:confirm => 'Are you sure you want to submit to CMS?'}) %>
                                   <!--API Submit-->
                               <% end %>
                             </td>
                         <% end %>
                         <td title="API Response">
                           <% if x_clinic_event.get_individual_group_submission_status == 'Submitted with Errors' %>
-                              <%= link_to 'Errors', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %>
+                              <%#= link_to 'Errors', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %>
                           <% elsif x_clinic_event.get_individual_group_submission_status == 'Submitted Successfully' %>
-                              <%= link_to 'Files', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %>
+                              <%#= link_to 'Files', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %>
                           <% end %>
                         </td>
-                        <td title="API Status"><%= x_clinic_event.get_individual_group_submission_status %></td>
+                        <td title="API Status"><%#= x_clinic_event.get_individual_group_submission_status %></td>
                       </tr>
                   <% end %>
               <% end %>
