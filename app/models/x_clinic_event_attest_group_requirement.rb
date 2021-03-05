@@ -191,6 +191,7 @@ class XClinicEventAttestGroupRequirement < ApplicationRecord
     where([selectstr,conditions])
         .joins(join_text)
         .group('xceagr.id')
+        .order('xceagr.id')
         .select(select_text)
         .first
   end
