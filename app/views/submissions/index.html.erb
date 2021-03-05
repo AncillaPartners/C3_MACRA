@@ -246,11 +246,11 @@
                             </td>
                         <% end %>
                         <td title="API Response">
-                          <% if x_clinic_event.get_individual_group_submission_status == 'Submitted with Errors' %>
+                          <%# if x_clinic_event.get_individual_group_submission_status == 'Submitted with Errors' %>
                               <%#= link_to 'Errors', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %>
-                          <% elsif x_clinic_event.get_individual_group_submission_status == 'Submitted Successfully' %>
+                          <%# elsif x_clinic_event.get_individual_group_submission_status == 'Submitted Successfully' %>
                               <%#= link_to 'Files', :action => 'individual', :id => x_clinic_event.attestation_clinic_id %>
-                          <% end %>
+                          <%# end %>
                         </td>
                         <td title="API Status"><%#= x_clinic_event.get_individual_group_submission_status %></td>
                       </tr>
