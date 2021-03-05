@@ -1,7 +1,7 @@
 class XAttestationClinicEvent < ApplicationRecord
   belongs_to :event
-  belongs_to :default_attestation_method, :class_name => 'AttestationMethod'
-  belongs_to :submission_status
+  belongs_to :default_attestation_method, :class_name => 'AttestationMethod', optional: true
+  belongs_to :submission_status, optional: true
   has_many  :attestation_clinic_submit_permission_files
   has_many  :attestation_clinic_cpia_documentation_files
 
