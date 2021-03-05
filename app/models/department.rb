@@ -258,7 +258,7 @@ class Department < ApplicationRecord
         .group('xdarsd.id')
         .having('active_req_count = 0')
         .select('d.*, count(distinct(xdcr.id)) as active_req_count')
-        .size
+        .size.size # Have to do .size twice. The first time is hash with keys being xdarsd.id and vals being counts.
   end
 
   def self.count_departments_with_no_assigned_requirements_by_group_id_and_attestation_clinic_id_and_event_id_and_criterion_id(group_id, attestation_clinic_id, event_id, criterion_id)
@@ -292,6 +292,6 @@ class Department < ApplicationRecord
         .group('xdarsd.id')
         .having('active_req_count = 0')
         .select('d.*, count(distinct(xdcr.id)) as active_req_count')
-        .size
+        .size.size # Have to do .size twice. The first time is hash with keys being xdarsd.id and vals being counts.
   end
 end
