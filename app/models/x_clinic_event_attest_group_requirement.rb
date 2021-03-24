@@ -1,5 +1,8 @@
 class XClinicEventAttestGroupRequirement < ApplicationRecord
+  belongs_to :x_clinic_event_attest_method
   belongs_to :x_group_requirement
+  delegate :requirement_id, :to => :x_group_requirement, :allow_nil => true
+  delegate :requirement, :to => :x_group_requirement, :allow_nil => true
 
   def self.first_group_aci_requirement_with_date_range_by_clinic_id_and_attestation_method_id_and_event_id(clinic_id, attestation_method_id, event_id, use_manual_flag = false)
     conditions = {}
