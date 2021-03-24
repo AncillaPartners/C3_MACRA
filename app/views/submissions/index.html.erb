@@ -73,6 +73,8 @@
               <% attestation_clinic_methods.each do |attestation_clinic_method| %>
               <% is_valid_to_submit = true %>
               <% if x_clinic_event and x_clinic_event.default_attestation_method %>
+              <%# Added the line below to quickly filter down list %>
+              <% if x_clinic_event.default_attestation_method_id == attestation_clinic_method.am_id.to_i %>
                   <%
                      attestation_method = AttestationMethod.find(attestation_clinic_method.am_id)
                      # is_valid_to_submit = false if (is_valid_to_submit and attestation_method.id != x_clinic_event.default_attestation_method_id)
@@ -255,6 +257,7 @@
                         <td title="API Status"><%#= x_clinic_event.get_individual_group_submission_status %></td>
                       </tr>
                   <% end %>
+              <% end %>
               <% end %>
               <% end %>
           <% end %>
