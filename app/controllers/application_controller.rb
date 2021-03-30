@@ -1652,8 +1652,8 @@ class ApplicationController < ActionController::Base
                    :performanceMet => department_criterion_requirement.performance_met,
                    :performanceNotMet => department_criterion_requirement.performance_not_met,
                    :eligiblePopulation => department_criterion_requirement.eligible_population}
-          value[:eligible_population_exclusion] = department_criterion_requirement.eligible_population_exclusion unless department_criterion_requirement.eligible_population_exclusion.nil?
-          value[:eligible_population_exception] = department_criterion_requirement.eligible_population_exception unless department_criterion_requirement.eligible_population_exception.nil?
+          value[:eligiblePopulationExclusion] = department_criterion_requirement.eligible_population_exclusion unless department_criterion_requirement.eligible_population_exclusion.nil?
+          value[:eligiblePopulationException] = department_criterion_requirement.eligible_population_exception unless department_criterion_requirement.eligible_population_exception.nil?
         end
         value
       when 5 # Multi-Performance Rate
@@ -1669,8 +1669,8 @@ class ApplicationController < ActionController::Base
                              :performanceMet => stratum_req.performance_met,
                              :performanceNotMet => stratum_req.performance_not_met,
                              :eligiblePopulation => stratum_req.eligible_population}
-            stratum_value[:eligible_population_exclusion] = stratum_req.eligible_population_exclusion unless stratum_req.eligible_population_exclusion.nil?
-            stratum_value[:eligible_population_exception] = stratum_req.eligible_population_exception unless stratum_req.eligible_population_exception.nil?
+            stratum_value[:eligiblePopulationExclusion] = stratum_req.eligible_population_exclusion unless stratum_req.eligible_population_exclusion.nil?
+            stratum_value[:eligiblePopulationException] = stratum_req.eligible_population_exception unless stratum_req.eligible_population_exception.nil?
           end
           strata << stratum_value
         end
@@ -1689,8 +1689,8 @@ class ApplicationController < ActionController::Base
                    :performanceNotMet => department_criterion_requirement.performance_not_met,
                    :eligiblePopulation => department_criterion_requirement.eligible_population,
                    :performanceRate => department_criterion_requirement.performance_rate}
-          value[:eligible_population_exclusion] = department_criterion_requirement.eligible_population_exclusion unless department_criterion_requirement.eligible_population_exclusion.nil?
-          value[:eligible_population_exception] = department_criterion_requirement.eligible_population_exception unless department_criterion_requirement.eligible_population_exception.nil?
+          value[:eligiblePopulationExclusion] = department_criterion_requirement.eligible_population_exclusion unless department_criterion_requirement.eligible_population_exclusion.nil?
+          value[:eligiblePopulationException] = department_criterion_requirement.eligible_population_exception unless department_criterion_requirement.eligible_population_exception.nil?
         end
         value
       when 7 # Registry Multi-Performance Rate
@@ -1706,8 +1706,8 @@ class ApplicationController < ActionController::Base
                              :performanceMet => stratum_req.performance_met,
                              :performanceNotMet => stratum_req.performance_not_met,
                              :eligiblePopulation => stratum_req.eligible_population}
-            stratum_value[:eligible_population_exclusion] = stratum_req.eligible_population_exclusion unless stratum_req.eligible_population_exclusion.nil?
-            stratum_value[:eligible_population_exception] = stratum_req.eligible_population_exception unless stratum_req.eligible_population_exception.nil?
+            stratum_value[:eligiblePopulationExclusion] = stratum_req.eligible_population_exclusion unless stratum_req.eligible_population_exclusion.nil?
+            stratum_value[:eligiblePopulationException] = stratum_req.eligible_population_exception unless stratum_req.eligible_population_exception.nil?
           end
           strata << stratum_value
         end
