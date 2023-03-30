@@ -1,4 +1,5 @@
 class ApplicationController < ActionController::Base
+  require 'fastercsv'
   before_action :authorize, :page_initializer
 
   # The expiration time.
@@ -1717,6 +1718,28 @@ class ApplicationController < ActionController::Base
       else
         nil
     end
+  end
+
+  def stream_csv(filename)
+
+    if request.env['HTTP_USER_AGENT'] =~ /msie/i
+      headers['Pragma'] = 'public'
+      headers["Content-type"] = "text/plain"
+      headers['Cache-Control'] = 'no-cache, must-revalidate, post-check=0, pre-check=0'
+      headers['Content-Disposition'] = "attachment; filename=\"#{filename}\""
+      headers['Expires'] = "0"
+    else
+      headers["Content-Type"] ||= 'text/csv'
+      headers["Content-Disposition"] = "attachment; filename=\"#{filename}\""
+    end
+
+    render :text => Proc.new { |response, output|
+      def output.<<(*args)
+        write(*args)
+      end
+      csv = FasterCSV.new(output, :row_sep => "\r\n", :force_quotes => true)
+      yield csv
+    }
   end
 
   def stream_json(filename, file_content)
